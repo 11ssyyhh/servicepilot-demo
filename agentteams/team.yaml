@@ -1,0 +1,162 @@
+# AgentTeams Team 配置
+# 对应AgentTeams平台的Team资源定义
+# 用于复赛部署到真实AgentTeams平台
+# 参考: https://github.com/agentscope-ai/AgentTeams
+
+apiVersion: agentteams.io/v1
+kind: Team
+metadata:
+  name: servicepilot-customer-service
+  namespace: goai-agent-infra
+  labels:
+    app: servicepilot
+    track: agent-infra
+    scenario: customer-service
+spec:
+  displayName: "ServicePilot 智能客服团队"
+  description: "基于多Agent协同的智能客服自主闭环系统"
+  
+  # Team Leader (Manager) - 负责任务编排和Agent调度
+  leader:
+    name: manager
+    runtime: qwenpaw
+    model: qwen-plus
+    skills:
+      - worker-management
+      - task-orchestration
+      - state-management
+  
+  # Team Members (Workers) - 7个职能Agent
+  workers:
+    - name: intent-router
+      role: "意图路由Agent"
+      runtime: qwenpaw
+      model: qwen-turbo
+      skills:
+        - intent-classifier
+        - sentiment-detector
+        - problem-router
+      capabilities:
+        - "意图识别"
+        - "情绪检测"
+        - "紧急度分级"
+        - "任务分发"
+      decisionBoundary: "仅做路由，不生成最终回复"
+    
+    - name: knowledge-retriever
+      role: "知识检索Agent"
+      runtime: qwenpaw
+      model: qwen-turbo
+      skills:
+        - faq-retrieval
+        - product-doc-rag
+        - history-case-search
+      capabilities:
+        - "FAQ检索"
+        - "产品文档RAG"
+        - "历史案例检索"
+      decisionBoundary: "仅检索不决策，置信度<0.6触发转人工"
+    
+    - name: task-planner
+      role: "任务规划Agent"
+      runtime: qwenpaw
+      model: qwen-plus
+      skills:
+        - task-decomposition
+        - risk-assessment
+        - tool-selection
+      capabilities:
+        - "问题拆解"
+        - "多步规划"
+        - "风险预判"
+      decisionBoundary: "规划但不执行，高风险必须标注审批节点"
+    
+    - name: tool-executor
+      role: "工具执行Agent"
+      runtime: openclaw
+      skills:
+        - order-query
+        - refund-process
+        - address-update
+        - ticket-create
+      mcpServers:
+        - order-system
+        - ticket-system
+        - payment-system
+        - logistics-system
+      capabilities:
+        - "订单查询"
+        - "退款处理"
+        - "地址修改"
+        - "工单创建"
+      decisionBoundary: "L1以下自动执行，L2+需审批令牌"
+    
+    - name: quality-guard
+      role: "质量风控Agent"
+      runtime: qwenpaw
+      model: qwen-plus
+      skills:
+        - compliance-check
+        - sensitive-word-filter
+        - risk-escalation
+      capabilities:
+        - "内容审核"
+        - "敏感词过滤"
+        - "合规检查"
+        - "风险升级"
+      decisionBoundary: "有权拦截任何输出，高风险强制转人工"
+    
+    - name: verifier
+      role: "效果验证Agent"
+      runtime: qwenpaw
+      model: qwen-turbo
+      skills:
+        - resolution-check
+        - satisfaction-assessment
+      capabilities:
+        - "问题解决确认"
+        - "满意度评估"
+        - "未解决重规划"
+      decisionBoundary: "仅验证不执行，未解决自动重规划或转人工"
+    
+    - name: memory-scribe
+      role: "记忆沉淀Agent"
+      runtime: qwenpaw
+      model: qwen-turbo
+      skills:
+        - conversation-summary
+        - knowledge-update
+        - service-report
+      capabilities:
+        - "对话摘要"
+        - "知识库更新建议"
+        - "服务报告生成"
+      decisionBoundary: "仅写入，需人工审核后才更新正式知识库"
+  
+  # 共享存储 (MinIO)
+  sharedStorage:
+    enabled: true
+    bucket: servicepilot-shared
+    purpose: "Agent间文件交换和上下文共享"
+  
+  # 可观测 (AgentLoop)
+  observability:
+    enabled: true
+    provider: agentloop
+    tracing: true
+    metrics: true
+    logging: true
+  
+  # 安全策略
+  security:
+    riskLevels:
+      L0: "只读诊断，自动执行"
+      L1: "低风险操作，自动执行+留痕"
+      L2: "高风险操作，需人工审批"
+      L3: "极端风险，仅生成方案"
+    approvalRequired:
+      - refund
+      - account-cancellation
+      - large-amount-transfer
+    auditEnabled: true
+    rollbackEnabled: true

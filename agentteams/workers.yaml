@@ -1,0 +1,219 @@
+# AgentTeams Worker 配置
+# 各Worker的详细定义，用于复赛部署
+# 参考: https://github.com/agentscope-ai/AgentTeams
+
+apiVersion: agentteams.io/v1
+kind: Worker
+metadata:
+  name: intent-router
+  namespace: goai-agent-infra
+spec:
+  team: servicepilot-customer-service
+  displayName: "意图路由Agent"
+  runtime: qwenpaw
+  model: qwen-turbo
+  systemPrompt: |
+    你是ServicePilot智能客服系统的意图路由Agent。
+    你的职责是：
+    1. 识别用户消息的意图类型（订单查询、退款、改地址、投诉、咨询等）
+    2. 检测用户情绪（正面/中性/负面/愤怒）
+    3. 评估问题紧急度
+    4. 将任务分发给对应的Agent
+    注意：你只做路由，不生成最终回复。
+  skills:
+    - name: intent-classifier
+      type: diagnostic
+    - name: sentiment-detector
+      type: diagnostic
+    - name: problem-router
+      type: diagnostic
+  resources:
+    cpu: "500m"
+    memory: "512Mi"
+---
+apiVersion: agentteams.io/v1
+kind: Worker
+metadata:
+  name: knowledge-retriever
+  namespace: goai-agent-infra
+spec:
+  team: servicepilot-customer-service
+  displayName: "知识检索Agent"
+  runtime: qwenpaw
+  model: qwen-turbo
+  systemPrompt: |
+    你是ServicePilot智能客服系统的知识检索Agent。
+    你的职责是：
+    1. 从FAQ知识库检索相关问题和答案
+    2. 从产品文档中RAG检索相关内容
+    3. 检索历史工单案例
+    4. 返回带置信度的候选答案
+    注意：你只做检索，不做最终决策。置信度低于0.6时建议转人工。
+  skills:
+    - name: faq-retrieval
+      type: knowledge
+    - name: product-doc-rag
+      type: knowledge
+    - name: history-case-search
+      type: knowledge
+  mcpServers:
+    - name: knowledge-base
+      endpoint: http://knowledge-base:8080/mcp
+  resources:
+    cpu: "500m"
+    memory: "512Mi"
+---
+apiVersion: agentteams.io/v1
+kind: Worker
+metadata:
+  name: task-planner
+  namespace: goai-agent-infra
+spec:
+  team: servicepilot-customer-service
+  displayName: "任务规划Agent"
+  runtime: qwenpaw
+  model: qwen-plus
+  systemPrompt: |
+    你是ServicePilot智能客服系统的任务规划Agent。
+    你的职责是：
+    1. 将复杂问题拆解为多步执行计划
+    2. 为每一步选择合适的工具/Skill
+    3. 评估每步操作的风险等级
+    4. 高风险操作必须标注审批节点
+    注意：你只做规划，不执行具体操作。
+  skills:
+    - name: task-decomposition
+      type: planning
+    - name: risk-assessment
+      type: governance
+    - name: tool-selection
+      type: planning
+  resources:
+    cpu: "1000m"
+    memory: "1Gi"
+---
+apiVersion: agentteams.io/v1
+kind: Worker
+metadata:
+  name: tool-executor
+  namespace: goai-agent-infra
+spec:
+  team: servicepilot-customer-service
+  displayName: "工具执行Agent"
+  runtime: openclaw
+  systemPrompt: |
+    你是ServicePilot智能客服系统的工具执行Agent。
+    你的职责是：
+    1. 按照任务规划调用业务系统工具
+    2. L0/L1低风险操作自动执行
+    3. L2/L3高风险操作必须验证审批令牌后才能执行
+    4. 所有操作记录审计日志
+    注意：严格遵守风险等级，无审批令牌不得执行高风险操作。
+  skills:
+    - name: order-query
+      type: execution
+      riskLevel: L0
+    - name: refund-process
+      type: execution
+      riskLevel: L2
+    - name: address-update
+      type: execution
+      riskLevel: L1
+    - name: ticket-create
+      type: execution
+      riskLevel: L0
+  mcpServers:
+    - name: order-system
+      endpoint: http://order-system:8080/mcp
+    - name: ticket-system
+      endpoint: http://ticket-system:8080/mcp
+    - name: payment-system
+      endpoint: http://payment-system:8080/mcp
+    - name: logistics-system
+      endpoint: http://logistics-system:8080/mcp
+  resources:
+    cpu: "1000m"
+    memory: "1Gi"
+---
+apiVersion: agentteams.io/v1
+kind: Worker
+metadata:
+  name: quality-guard
+  namespace: goai-agent-infra
+spec:
+  team: servicepilot-customer-service
+  displayName: "质量风控Agent"
+  runtime: qwenpaw
+  model: qwen-plus
+  systemPrompt: |
+    你是ServicePilot智能客服系统的质量风控Agent。
+    你的职责是：
+    1. 审核待发送回复的内容合规性
+    2. 过滤敏感词
+    3. 检查广告法合规
+    4. 高风险操作触发人工审批
+    注意：你有权拦截任何输出，确保发送给用户的内容安全合规。
+  skills:
+    - name: compliance-check
+      type: governance
+    - name: sensitive-word-filter
+      type: governance
+    - name: risk-escalation
+      type: governance
+  resources:
+    cpu: "500m"
+    memory: "512Mi"
+---
+apiVersion: agentteams.io/v1
+kind: Worker
+metadata:
+  name: verifier
+  namespace: goai-agent-infra
+spec:
+  team: servicepilot-customer-service
+  displayName: "效果验证Agent"
+  runtime: qwenpaw
+  model: qwen-turbo
+  systemPrompt: |
+    你是ServicePilot智能客服系统的效果验证Agent。
+    你的职责是：
+    1. 确认用户问题是否已解决
+    2. 评估用户满意度
+    3. 未解决的问题触发重规划或转人工
+    注意：你只做验证，不执行具体操作。
+  skills:
+    - name: resolution-check
+      type: verification
+    - name: satisfaction-assessment
+      type: verification
+  resources:
+    cpu: "500m"
+    memory: "512Mi"
+---
+apiVersion: agentteams.io/v1
+kind: Worker
+metadata:
+  name: memory-scribe
+  namespace: goai-agent-infra
+spec:
+  team: servicepilot-customer-service
+  displayName: "记忆沉淀Agent"
+  runtime: qwenpaw
+  model: qwen-turbo
+  systemPrompt: |
+    你是ServicePilot智能客服系统的记忆沉淀Agent。
+    你的职责是：
+    1. 生成对话结构化摘要
+    2. 提出知识库更新建议
+    3. 生成服务报告
+    注意：你只写入建议，正式知识库更新需要人工审核。
+  skills:
+    - name: conversation-summary
+      type: memory
+    - name: knowledge-update
+      type: memory
+    - name: service-report
+      type: memory
+  resources:
+    cpu: "500m"
+    memory: "512Mi"

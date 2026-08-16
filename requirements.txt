@@ -1,0 +1,24 @@
+# ServicePilot 依赖
+# 本Demo为纯Python实现，无外部依赖，仅需Python 3.8+
+# 复赛接入真实AgentTeams后需要以下依赖
+
+# 核心 (复赛需要)
+# agentteams>=1.2.0
+# openclaw>=0.1.0
+# qwenpaw>=2.0.0
+
+# AI相关 (复赛需要)
+# openai>=1.0.0
+# dashscope>=1.0.0  # 通义千问
+# langchain>=0.1.0
+# chromadb>=0.4.0  # 向量数据库
+
+# 工具 (复赛需要)
+# mcp>=0.1.0  # Model Context Protocol
+# pyyaml>=6.0
+# requests>=2.31.0
+# python-dotenv>=1.0.0
+
+# 可观测 (复赛需要)
+# opentelemetry-api>=1.0.0
+# opentelemetry-sdk>=1.0.0
