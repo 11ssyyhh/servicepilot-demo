@@ -234,6 +234,24 @@
       overflow-y: auto;
       padding: 8px 14px 14px;
     }
+    .evidence-links {
+      flex: 0 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px 14px 14px;
+      border-top: 1px solid var(--line);
+    }
+    .evidence-links a {
+      font-size: 12px;
+      color: var(--accent);
+      text-decoration: none;
+      border: 1px solid #cfe8e3;
+      background: #f2fbf9;
+      border-radius: 6px;
+      padding: 5px 8px;
+    }
+    .evidence-links a:hover { background: var(--accent-soft); }
     .trace-step {
       display: flex;
       gap: 11px;
@@ -350,6 +368,7 @@
         <div class="trace-list" id="traceList">
           <div class="message meta" style="padding:12px 2px">等待场景运行</div>
         </div>
+        <div class="evidence-links" id="evidenceLinks"></div>
       </section>
     </main>
   </div>
@@ -368,7 +387,7 @@
         reply: "您好，您的订单ORD20260816001状态为shipped，商品：智能蓝牙耳机 Pro，物流：运输中。如有其他问题请随时告诉我。",
         steps: [
           { agent: "IntentRouter", title: "意图路由", detail: "意图=order_query | 情绪=0.50 | 紧急度=normal" },
-          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到3条结果，置信度=0.00" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到8条结果，置信度=0.55，证据：faq.knowledge_base" },
           { agent: "TaskPlanner", title: "任务规划", detail: "规划2步执行 | 整体风险=L0" },
           { agent: "ToolExecutor", title: "工具执行", detail: "OrderQuery -> L0 成功" },
           { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，无敏感内容" },
@@ -385,15 +404,35 @@
         color: "#b42318",
         icon: "rotate-ccw",
         user: "我要退款，订单ORD20260816001不想要了",
-        reply: "您好，已为您查询到订单信息。退款申请需要您确认后提交，确认后1-3个工作日原路返回。请问是否确认申请退款？",
+        reply: "您好，您的退款申请已提交，退款单号RF-D3F2A8C1，预计1-3个工作日原路返回。",
         steps: [
           { agent: "IntentRouter", title: "意图路由", detail: "意图=refund | 情绪=0.50 | 紧急度=normal" },
-          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到3条结果，置信度=0.00" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到7条结果，置信度=0.90，证据：faq.knowledge_base" },
           { agent: "TaskPlanner", title: "任务规划", detail: "规划4步执行 | 整体风险=L2" },
-          { agent: "ToolExecutor", title: "工具执行", detail: "OrderQuery L0 成功；RiskEscalation L2 成功；RefundProcess 需审批，暂停执行", mode: "warn" },
-          { agent: "QualityGuard", title: "质量审核", detail: "高风险操作，回复中提示用户确认" },
-          { agent: "Verifier", title: "效果验证", detail: "问题已解决 | 满意度=0.85" },
+          { agent: "ToolExecutor", title: "工具执行", detail: "OrderQuery L0 成功；RiskEscalation L2 成功；demo_admin 审批通过；RefundProcess L2 成功（幂等键）", mode: "warn" },
+          { agent: "QualityGuard", title: "质量审核", detail: "审批依据完整，回复包含退款单号" },
+          { agent: "Verifier", title: "效果验证", detail: "退款已执行，问题已解决 | 满意度=0.85" },
           { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和服务报告" }
+        ]
+      },
+      refundReject: {
+        label: "退款拒绝",
+        desc: "高风险 · 审批拒绝转人工",
+        risk: "L2",
+        urgency: "normal",
+        riskClass: "risk-high",
+        color: "#b42318",
+        icon: "shield-x",
+        user: "我要退款，订单ORD20260816002不想要了",
+        reply: "您好，您的退款申请未通过审批，已为您转人工客服进一步核实，请留意工单进度。",
+        steps: [
+          { agent: "IntentRouter", title: "意图路由", detail: "意图=refund | 情绪=0.50 | 紧急度=normal" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到7条结果，置信度=0.90，证据：faq.knowledge_base" },
+          { agent: "TaskPlanner", title: "任务规划", detail: "规划4步执行 | 整体风险=L2，第4步标注审批节点" },
+          { agent: "ToolExecutor", title: "工具执行", detail: "OrderQuery L0 成功；RiskEscalation L2 成功；RefundProcess 待审批，暂停执行", mode: "warn" },
+          { agent: "QualityGuard", title: "质量审核", detail: "回复提示用户审批未通过" },
+          { agent: "Verifier", title: "效果验证", detail: "审批未通过，问题未解决，自动创建转人工工单", mode: "danger" },
+          { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和知识库更新建议" }
         ]
       },
       address: {
@@ -405,14 +444,14 @@
         color: "#b45309",
         icon: "map-pin",
         user: "帮我把订单ORD20260816001的收货地址改成南京市玄武区zzz路3号",
-        reply: "您好，正在为您处理地址修改。",
+        reply: "您好，正在为您处理地址修改。该订单已发货，无法在线修改地址，已为您创建转人工工单TK20260816002，客服将尽快协助处理。",
         steps: [
           { agent: "IntentRouter", title: "意图路由", detail: "意图=address_change | 情绪=0.50 | 紧急度=normal" },
-          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到3条结果，置信度=0.00" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到6条结果，置信度=0.65，证据：faq.knowledge_base" },
           { agent: "TaskPlanner", title: "任务规划", detail: "规划2步执行 | 整体风险=L1" },
           { agent: "ToolExecutor", title: "工具执行", detail: "OrderQuery L0 成功；AddressUpdate L1 失败（订单已发货，仅未发货订单可修改），自动创建工单转人工", mode: "danger" },
           { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，无敏感内容" },
-          { agent: "Verifier", title: "效果验证", detail: "问题已解决 | 满意度=0.85" },
+          { agent: "Verifier", title: "效果验证", detail: "问题未解决，转人工 | 满意度=0.30 | 工单 TK20260816002", mode: "danger" },
           { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和服务报告" }
         ]
       },
@@ -425,14 +464,14 @@
         color: "#b42318",
         icon: "flag",
         user: "你们什么垃圾客服！等了三天都没解决问题，我要投诉！",
-        reply: "非常抱歉给您带来不好的体验，已为您创建高优先级工单，客服会尽快联系您。",
+        reply: "非常抱歉给您带来不好的体验，已为您创建高优先级工单TK20260816003，客服会在2小时内联系您处理。",
         steps: [
           { agent: "IntentRouter", title: "意图路由", detail: "意图=complaint | 情绪=0.20 | 紧急度=high" },
-          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到3条结果，置信度=0.00" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到6条结果，置信度=0.50，证据：faq.knowledge_base" },
           { agent: "TaskPlanner", title: "任务规划", detail: "规划2步执行 | 整体风险=L0" },
-          { agent: "ToolExecutor", title: "工具执行", detail: "TicketCreate -> L0 成功（高优先级工单）", mode: "danger" },
+          { agent: "ToolExecutor", title: "工具执行", detail: "TicketCreate -> L0 成功（高优先级工单 TK20260816003，幂等键）", mode: "danger" },
           { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，回复语气已校准" },
-          { agent: "Verifier", title: "效果验证", detail: "问题已解决 | 满意度=0.85" },
+          { agent: "Verifier", title: "效果验证", detail: "高优先级工单已创建 | 满意度=0.85" },
           { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和服务报告" }
         ]
       }
@@ -449,6 +488,7 @@
     const metricRisk = document.getElementById("metricRisk");
     const metricUrgency = document.getElementById("metricUrgency");
     const metricTime = document.getElementById("metricTime");
+    const evidenceLinks = document.getElementById("evidenceLinks");
     let running = false;
 
     function buildScenarios() {
@@ -493,6 +533,7 @@
       metricRisk.textContent = "-";
       metricUrgency.textContent = "-";
       metricTime.textContent = "-";
+      evidenceLinks.innerHTML = "";
     }
 
     function addTraceStep(step, index, total) {
@@ -547,6 +588,9 @@
       const elapsed = Math.max(800, Math.round(performance.now() - startedAt));
       metricTime.textContent = (elapsed / 1000).toFixed(1) + "s";
       addMessage("bot", s.reply);
+      evidenceLinks.innerHTML = [
+        'trace.jsonl', 'logs.jsonl', 'metrics.json', 'session.json', 'summary.json', 'eval_report.json'
+      ].map(name => `<a href="evidence/${name}" target="_blank">${name}</a>`).join("");
       running = false;
       sendBtn.disabled = false;
       refreshIcons();

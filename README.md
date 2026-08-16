@@ -1,204 +1,145 @@
-# ServicePilot — 智能客服多Agent自主闭环系统
+# ServicePilot — 智能客服多 Agent 自主闭环系统
 
-> GOAI世界人工智能开源大赛 · Agent Infra赛道初赛作品
-> 基于AgentTeams多Agent协同框架，实现智能客服全链路自主闭环
+> GOAI 世界人工智能开源大赛 · Agent Infra 赛道初赛作品
+> 方向：Agent Infra / 智能客服自主闭环
 
-## 📋 项目简介
+[![CI](https://github.com/11ssyyhh/servicepilot-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/11ssyyhh/servicepilot-demo/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![在线 Demo](https://img.shields.io/badge/在线Demo-GitHub%20Pages-teal)](https://11ssyyhh.github.io/servicepilot-demo/)
 
-ServicePilot是一个企业级智能客服系统，通过7个职能Agent的分工协作，实现从用户进线到问题解决、知识沉淀的全链路自主闭环。解决传统单Bot客服无法处理复杂业务、人工介入率高的核心痛点。
+ServicePilot 基于 AgentTeams Manager-Workers 架构，用 7 个职能 Agent 协同完成
+「进线 → 意图识别 → RAG 检索 → 任务规划 → 工具执行 → 质量审核 → 效果验证 → 记忆沉淀」
+的智能客服自主闭环，解决传统单 Bot 客服无法处理复杂业务、高风险操作依赖人工、
+过程不可追溯的核心痛点。
 
-## 🏗️ 架构设计
+## ✨ 核心能力
 
-### Manager-Workers架构 (模拟AgentTeams)
-
-```
-用户入口
-    ↓
-┌─────────────────────────────────────────┐
-│         Manager (编排器)                 │
-│  任务拆解 | 状态管理 | Agent调度 | 异常处理 │
-└─────────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────────┐
-│           7个Worker Agent                │
-│  IntentRouter | KnowledgeRetriever      │
-│  TaskPlanner  | ToolExecutor            │
-│  QualityGuard | Verifier | MemoryScribe │
-└─────────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────────┐
-│           15+ Skill体系                  │
-│  诊断 | 知识 | 执行 | 治理 | 沉淀        │
-└─────────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────────┐
-│        MCP适配器 (Mock业务系统)          │
-│  订单 | 工单 | 支付 | 物流 | 知识库      │
-└─────────────────────────────────────────┘
-```
-
-### 自主闭环链路
-
-```
-用户进线 → 意图识别+情绪检测 → 知识库RAG检索 → 方案生成
-    → 质量审核(L0-L3风险分级) → 工具执行(高风险需审批)
-    → 效果验证 → 用户确认 → 工单关闭 + 知识沉淀 + 服务报告
-```
-
-## 🤖 7个职能Agent
-
-| Agent | 职责 | 决策边界 |
-|-------|------|---------|
-| **IntentRouter** | 意图识别、情绪检测、紧急度分级、任务分发 | 仅做路由，不生成最终回复 |
-| **KnowledgeRetriever** | FAQ检索、产品文档RAG、历史案例检索 | 仅检索不决策，置信度<0.6转人工 |
-| **TaskPlanner** | 问题拆解、多步规划、工具选择、风险预判 | 规划但不执行，高风险标注审批节点 |
-| **ToolExecutor** | 订单查询、退款处理、地址修改、工单创建 | L1以下自动执行，L2+需审批令牌 |
-| **QualityGuard** | 内容审核、敏感词过滤、合规检查、风险升级 | 有权拦截任何输出，高风险强制转人工 |
-| **Verifier** | 问题解决确认、满意度评估、未解决重规划 | 仅验证不执行，未解决自动转人工 |
-| **MemoryScribe** | 对话摘要、知识库更新建议、服务报告 | 仅写入建议，正式更新需人工审核 |
-
-## 🛠️ 核心Skill体系 (15+)
-
-### 诊断类
-- `IntentClassifier` - 20类客服意图分类
-- `SentimentDetector` - 5级情绪识别
-- `ProblemTypeRouter` - 问题类型路由
-
-### 知识类
-- `FAQRetrieval` - 常见问题向量检索
-- `ProductDocRAG` - 产品文档RAG检索
-- `HistoryCaseSearch` - 历史工单案例检索
-
-### 执行类
-- `OrderQuery` - 订单状态查询
-- `RefundProcess` - 退款申请处理 (L2高风险)
-- `AddressUpdate` - 收货地址修改 (L1低风险)
-- `TicketCreate` - 人工工单创建
-
-### 治理类
-- `ComplianceCheck` - 合规性检查
-- `SensitiveWordFilter` - 敏感词过滤
-- `RiskEscalation` - 风险升级判断 (L0-L3)
-
-### 沉淀类
-- `ConversationSummary` - 对话摘要生成
-- `ServiceReport` - 服务报告生成
-
-## 🔐 安全边界 (L0-L3风险分级)
-
-| 等级 | 名称 | 处理方式 | 典型操作 |
-|------|------|---------|---------|
-| **L0** | 只读诊断 | 自动执行 | 订单查询、物流查询 |
-| **L1** | 低风险自动执行 | 自动执行+留痕 | 修改地址、发放优惠券 |
-| **L2** | 灰度+审批 | 人工确认后执行 | 退款、销户、大额操作 |
-| **L3** | 只生成方案 | 仅输出建议 | 极端风险操作 |
-
-所有操作支持：审批记录、自动回滚、审计日志、可回放Trace。
+- **7 个职能 Agent**：IntentRouter / KnowledgeRetriever / TaskPlanner / ToolExecutor / QualityGuard / Verifier / MemoryScribe
+- **17 个可复用 Skill**：诊断、知识、执行、治理、记忆五类，标准化输入输出与失败处理
+- **L0-L3 风险管控**：低风险自动闭环，L2 退款必须人工审批，审批通过/拒绝双路径可审计
+- **幂等 + 回滚**：写操作携带 `idempotency_key`，退款支持 `RollbackOperation` 回滚
+- **MCP 等价契约**：HTTP + JSON-RPC Mock Server，覆盖订单/工单/支付/物流
+- **全链路可观测**：Trace/Log/Metrics/Session/Summary 五类证据，支持回放
+- **可插拔 LLM**：默认零依赖规则引擎，配置 `SERVICE_PILOT_LLM_API_KEY` 即切 OpenAI 兼容接口
+- **评估回归**：Golden/Badcase 数据集 + `evaluate.py`，输出准确率与成本指标
+- **人工审批台**：`approval_server.py` + 交互式 Web UI，通过/拒绝写入审计
+- **数据合规**：手机号、邮箱、地址在证据文件中自动脱敏
 
 ## 🚀 快速开始
 
-### 环境要求
-- Python 3.8+
-- 无外部依赖 (初赛Demo使用纯Python实现)
-
-### 运行Demo
-
 ```bash
-cd servicepilot-demo
-python main.py
+# 1. 运行 5 个场景闭环，生成 output/ 证据
+python main.py 1
+
+# 2. 运行 26 项测试
+python -m unittest discover -s tests -t . -v
+
+# 3. 运行评估
+python evaluate.py
+
+# 4. 回放最近一次会话
+python replay.py
+
+# 5. 人工审批台（浏览器打开 http://127.0.0.1:8080/approval.html）
+python approval_server.py 8080
+
+# 6. MCP 等价 Mock Server
+python mcp_mock_server.py 8001
+
+# 7. Docker 一键演示
+docker compose up --build
 ```
 
-### 运行模式
+在线交互 Demo：<https://11ssyyhh.github.io/servicepilot-demo/>
 
-1. **自动演示模式** (默认) - 依次运行4个场景
-2. **交互模式** - 手动输入用户消息
-3. **单场景模式** - 仅运行订单查询场景
+## 📋 Demo 场景
 
-```bash
-python main.py 1  # 自动演示
-python main.py 2  # 交互模式
-python main.py 3  # 单场景
-```
-
-### Demo场景
-
-| 场景 | 意图 | 风险等级 | 说明 |
-|------|------|---------|------|
-| 订单查询 | order_query | L0 | 只读，全自动执行 |
-| 退款申请 | refund | L2 | 高风险，需审批 |
-| 修改地址 | address_change | L1 | 低风险，自动执行 |
-| 用户投诉 | complaint | high | 高紧急度，自动转人工 |
+| 场景 | 意图 | 风险 | 闭环行为 |
+|------|------|------|---------|
+| 订单查询 | order_query | L0 | 自动查询并回复 |
+| 退款申请 | refund | L2 | 审批通过 → 幂等执行退款 → 审计 |
+| 退款申请 | refund | L2 | 审批拒绝 → 转人工工单 |
+| 修改地址 | address_change | L1 | 执行失败 → 转人工工单 |
+| 用户投诉 | complaint | high | 创建高优先级工单并安抚 |
 
 ## 📁 项目结构
 
-```
+```text
 servicepilot-demo/
-├── main.py                 # 入口，Demo场景演示
-├── config.py               # 配置 (Agent定义、Skill注册、风险等级)
-├── manager.py              # Manager (AgentTeams编排器)
-├── agents.py               # 7个Agent实现
-├── skills.py               # 15+ Skill实现
-├── shared_state.py         # 共享状态 (Conversation State)
-├── mock_systems.py         # Mock业务系统 (MCP适配器)
-├── requirements.txt        # 依赖
-├── README.md               # 本文档
-└── agentteams/             # AgentTeams真实部署配置
-    ├── team.yaml           # Team定义
-    └── workers.yaml        # Worker定义
+├── main.py                  # Demo 入口（5 场景）
+├── manager.py               # AgentTeams Manager 编排器
+├── agents.py                # 7 个职能 Agent
+├── skills.py                # 17 个 Skill
+├── shared_state.py          # 共享状态（审批/审计/执行记录）
+├── mock_systems.py          # Mock 业务系统（幂等 + 回滚）
+├── observability.py         # Trace / Log / Metrics
+├── llm.py                   # 可插拔 LLM 适配器（规则引擎兜底）
+├── masking.py               # PII 脱敏
+├── evaluate.py              # Golden/Badcase 评估
+├── eval_dataset.json        # 评估数据集
+├── replay.py                # 全链路回放
+├── approval_server.py       # 人工审批服务
+├── mcp_mock_server.py       # MCP 等价 Mock Server
+├── agentteams/              # AgentTeams 部署配置
+├── docs/                    # 提交文档 + 在线 Demo + 审批台
+├── tests/                   # 26 项测试
+└── .github/workflows/ci.yml # CI
 ```
 
-## 📊 技术栈
+## 📊 可观测证据
 
-| 层级 | 技术 | 说明 |
-|------|------|------|
-| 多Agent框架 | AgentTeams (Hiclaw) | 必须，Manager-Workers架构 |
-| Skill | 自定义Skill + 阿里云用云Skills | 必选，标准化能力封装 |
-| 工具协议 | MCP (Model Context Protocol) | 推荐，业务系统对接 |
-| AI网关 | Higress | 推荐，统一入口/鉴权/限流 |
-| 资源治理 | Nacos | 推荐，Prompt/Skill/AgentSpec管理 |
-| 数据存储 | PolarDB + pgvector | 推荐，RAG/长记忆/审计日志 |
-| 消息队列 | RocketMQ | 推荐，事件驱动/Agent间通信 |
-| 可观测 | AgentLoop / AgentScope Studio | 推荐，Trace/Log/Metrics |
+运行后 `output/` 自动生成：
 
-## 🎯 创新点
+- `trace.jsonl`：Agent/Skill/MCP/LLM/RAG/审批全链路 Span
+- `logs.jsonl`：结构化日志（意图路由、失败、审批、审计）
+- `metrics.json`：会话数、工具成功率、Token、成本、端到端延迟
+- `session.json`：脱敏会话快照
+- `summary.json`：审批、工单、执行记录与服务报告
+- `eval_report.json`：评估结果
 
-1. **多Agent协同而非单Bot** - 7个专业角色模拟真实客服团队，复杂问题解决率提升40%
-2. **L0-L3四级风险管控** - 低风险自动闭环，高风险人工审批，所有操作可追溯可回滚
-3. **Skill标准化可迁移** - 客服经验封装为标准化Skill，支持跨行业快速迁移
-4. **全链路可观测** - AgentLoop记录每次Agent/Skill/工具/LLM调用，可回放可审计
+样例证据见 [docs/evidence/](docs/evidence/)。
+
+## 📚 提交文档
+
+- [500 字作品简介](docs/01-作品简介.md)
+- [Agent Identity 清单](docs/02-AgentIdentity清单.md)
+- [Skill 清单](docs/03-Skill清单.md)
+- [MCP 工具契约](docs/04-工具契约.md)
+- [可观测与安全](docs/05-可观测与安全.md)
+- [开放开源计划](docs/06-开放开源计划.md)
+- [初赛检查清单](docs/07-初赛检查清单.md)
+- [AgentTeams 映射说明](docs/08-AgentTeams映射说明.md)
+- [人工审批台](docs/approval.html)
 
 ## 📈 量化目标
 
-- 自动解决率：80%+ (常见问题)
-- 平均响应时间：3分钟 → 30秒
-- 客服人力成本：降低40%
-- 关键操作审计：100%留痕
+- 自动解决率：80%+（常见问题）
+- 平均响应时间：3 分钟 → 30 秒
+- 客服人力成本：降低 40%
+- 关键操作审计：100% 留痕
+- 评估通过率：Golden Case 100%（当前 6/6）
 
 ## 🔄 复赛计划
 
-- [ ] 接入真实AgentTeams平台 (Docker/K8s部署)
-- [ ] 对接真实业务系统API (订单/工单/支付/物流)
-- [ ] 引入通义千问LLM (使用Token Plan月卡额度)
-- [ ] 构建客服对话评估数据集 (Golden/Bad Case)
-- [ ] 接入AgentLoop可观测看板
+- [ ] 接入真实 AgentTeams 平台（Docker/K8s 部署）
+- [ ] 对接真实业务系统 API（订单/工单/支付/物流）
+- [ ] 接入通义千问 LLM（Token Plan 月卡额度）
+- [ ] 扩充客服对话评估数据集
+- [ ] 接入 AgentLoop 可观测看板
 - [ ] 完善安全执行白名单和回滚机制
 
 ## 📄 开源计划
 
-本项目将开源以下成果：
-- 智能客服Agent角色模板 (7个Agent Identity定义)
-- 15+核心Skill (标准化Schema + 实现)
-- MCP适配器样例 (订单/工单/支付/物流)
-- 客服对话评估数据集
-- AgentTeams部署配置文件
+本项目将开源：7 个 Agent 模板、17 个 Skill、MCP Mock Server、评估数据集、
+AgentTeams 部署配置，代码采用 MIT License。
 
 ## 📞 相关链接
 
-- GOAI大赛官网: https://goaihz.com
-- AgentTeams GitHub: https://github.com/agentscope-ai/AgentTeams
-- 阿里云AgentTeams: https://www.aliyun.com/product/agentteams
-- DataWhale夏令营: https://ailc.datawhale.cn
+- GOAI 大赛官网：<https://goaihz.com>
+- AgentTeams：<https://github.com/agentscope-ai/AgentTeams>
+- 阿里云 AgentTeams：<https://www.aliyun.com/product/agentteams>
+- DataWhale 夏令营：<https://ailc.datawhale.cn>
 
 ---
 
-**GOAI Agent Infra赛道 · ServicePilot团队 · 2026年8月**
+**GOAI Agent Infra 赛道 · ServicePilot 团队 · 2026 年 8 月**

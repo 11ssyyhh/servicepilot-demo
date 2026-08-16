@@ -1,0 +1,44 @@
+[
+  {
+    "id": "order_query_ok",
+    "input": "我的订单ORD20260816001现在什么状态了？帮我查一下",
+    "expected_intent": "order_query",
+    "expected_resolved": true,
+    "auto_approve": true
+  },
+  {
+    "id": "refund_approved",
+    "input": "我要退款，订单ORD20260816001不想要了",
+    "expected_intent": "refund",
+    "expected_resolved": true,
+    "auto_approve": true
+  },
+  {
+    "id": "refund_rejected",
+    "input": "我要退款，订单ORD20260816002不想要了",
+    "expected_intent": "refund",
+    "expected_resolved": false,
+    "auto_approve": false
+  },
+  {
+    "id": "address_change_failed",
+    "input": "帮我把订单ORD20260816001的收货地址改成南京市玄武区zzz路3号",
+    "expected_intent": "address_change",
+    "expected_resolved": false,
+    "auto_approve": true
+  },
+  {
+    "id": "complaint_ticket",
+    "input": "你们什么垃圾客服！等了三天都没解决问题，我要投诉！",
+    "expected_intent": "complaint",
+    "expected_resolved": true,
+    "auto_approve": true
+  },
+  {
+    "id": "logistics_query_ok",
+    "input": "我的订单ORD20260816001物流到哪了？",
+    "expected_intent": "logistics_query",
+    "expected_resolved": true,
+    "auto_approve": true
+  }
+]

@@ -31,6 +31,9 @@ class ExecutionRecord:
     success: bool
     risk_level: str = "L0"
     approved: bool = False
+    idempotency_key: Optional[str] = None
+    rollback_point: Any = None
+    duration_ms: float = 0.0
     timestamp: float = field(default_factory=time.time)
 
 
@@ -42,6 +45,9 @@ class SharedState:
     """
     session_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
     user_id: str = "anonymous"
+    trace_id: str = ""
+    auto_approve: bool = True
+    approver: str = "auto_demo"
     
     # 对话历史
     messages: List[Message] = field(default_factory=list)
@@ -77,6 +83,12 @@ class SharedState:
     # 审批记录 (高风险操作需要)
     pending_approvals: List[Dict] = field(default_factory=list)
     approval_history: List[Dict] = field(default_factory=list)
+    audit_events: List[Dict] = field(default_factory=list)
+    tickets_created: List[Dict] = field(default_factory=list)
+    rollback_points: List[Dict] = field(default_factory=list)
+    idempotency_keys: Dict[str, str] = field(default_factory=dict)
+    needs_human: bool = False
+    final_reply: str = ""
     
     # 时间线 (用于Demo展示)
     timeline: List[Dict] = field(default_factory=list)
@@ -93,27 +105,35 @@ class SharedState:
         return msg
     
     def add_execution(self, skill_name: str, input_params: Dict, output: Any, 
-                      success: bool, risk_level: str = "L0"):
+                      success: bool, risk_level: str = "L0",
+                      idempotency_key: str = None, rollback_point: Any = None,
+                      duration_ms: float = 0.0):
         """记录工具执行"""
         record = ExecutionRecord(
             skill_name=skill_name, input_params=input_params,
-            output_result=output, success=success, risk_level=risk_level
+            output_result=output, success=success, risk_level=risk_level,
+            idempotency_key=idempotency_key, rollback_point=rollback_point,
+            duration_ms=duration_ms,
         )
         self.execution_records.append(record)
         self.timeline.append({
             "time": time.strftime("%H:%M:%S"),
             "agent": "ToolExecutor",
-            "action": f"执行 {skill_name} -> {'成功' if success else '失败'}",
+            "action": f"执行 {skill_name} -> {'成功' if success else '失败'}"
+                      + (f" (幂等键={idempotency_key})" if idempotency_key else ""),
         })
         return record
     
-    def request_approval(self, action: str, reason: str, risk_level: str = "L2"):
+    def request_approval(self, action: str, reason: str, risk_level: str = "L2",
+                         idempotency_key: str = None, evidence: List[Any] = None):
         """请求人工审批 (高风险操作)"""
         approval = {
             "id": str(uuid.uuid4())[:8],
             "action": action,
             "reason": reason,
             "risk_level": risk_level,
+            "idempotency_key": idempotency_key,
+            "evidence": evidence or [],
             "status": "pending",
             "timestamp": time.time(),
         }
@@ -125,12 +145,15 @@ class SharedState:
         })
         return approval
     
-    def approve(self, approval_id: str, approved: bool = True, approver: str = "user"):
+    def approve(self, approval_id: str, approved: bool = True, approver: str = "user",
+                reason: str = None):
         """审批操作"""
         for app in self.pending_approvals:
             if app["id"] == approval_id:
                 app["status"] = "approved" if approved else "rejected"
                 app["approver"] = approver
+                app["approved"] = approved
+                app["reason"] = reason or ("自动审批通过" if approved else "审批拒绝")
                 self.approval_history.append(app)
                 self.pending_approvals.remove(app)
                 self.timeline.append({
@@ -138,8 +161,42 @@ class SharedState:
                     "agent": approver,
                     "action": f"[审批{'通过' if approved else '拒绝'}] {app['action']}",
                 })
+                self.add_audit(
+                    event="approval.decided",
+                    actor=approver,
+                    details={
+                        "approval_id": app["id"],
+                        "action": app["action"],
+                        "approved": approved,
+                        "reason": app["reason"],
+                        "idempotency_key": app.get("idempotency_key"),
+                    },
+                )
                 return app
         return None
+    
+    def add_audit(self, event: str, actor: str, details: Dict = None):
+        """追加审计事件"""
+        self.audit_events.append({
+            "trace_id": self.trace_id,
+            "timestamp": time.time(),
+            "event": event,
+            "actor": actor,
+            "details": details or {},
+        })
+    
+    def add_ticket(self, ticket: Dict):
+        """记录创建的工单"""
+        self.tickets_created.append(ticket)
+    
+    def add_rollback_point(self, action: str, point: Any, idempotency_key: str = None):
+        """记录回滚点"""
+        self.rollback_points.append({
+            "action": action,
+            "point": point,
+            "idempotency_key": idempotency_key,
+            "timestamp": time.time(),
+        })
     
     def get_last_user_message(self) -> Optional[Message]:
         """获取最后一条用户消息"""
@@ -152,13 +209,26 @@ class SharedState:
         """导出为字典（用于日志/报告）"""
         return {
             "session_id": self.session_id,
+            "trace_id": self.trace_id,
             "intent": self.intent,
             "sentiment": self.sentiment,
             "urgency": self.urgency,
             "risk_level": self.overall_risk_level,
             "issue_resolved": self.issue_resolved,
             "satisfaction": self.satisfaction_score,
+            "retrieval_confidence": self.retrieval_confidence,
             "message_count": len(self.messages),
             "execution_count": len(self.execution_records),
             "summary": self.conversation_summary,
+            "final_reply": self.final_reply,
+            "approval_history": list(self.approval_history),
+            "pending_approvals": list(self.pending_approvals),
+            "audit_events": list(self.audit_events),
+            "tickets": list(self.tickets_created),
+            "rollback_points": list(self.rollback_points),
+            "needs_human": self.needs_human,
+            "messages": [
+                {"role": m.role, "agent": m.agent_name, "content": m.content, "timestamp": m.timestamp}
+                for m in self.messages
+            ],
         }

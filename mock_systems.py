@@ -40,6 +40,10 @@ class MockOrderSystem:
                               "status": "已签收", "last_update": "2026-08-12 09:30:00 已签收"},
             },
         }
+        # 幂等与回滚记录
+        self.refund_records = {}
+        self.refund_previous_status = {}
+        self.rollback_records = []
     
     def query_order(self, order_id: str = None, phone: str = None) -> Dict[str, Any]:
         """查询订单"""
@@ -65,16 +69,25 @@ class MockOrderSystem:
         return {"success": True, "data": {"order_id": order_id, "old_address": old_address, 
                                           "new_address": new_address, "updated_at": time.strftime("%Y-%m-%d %H:%M:%S")}}
     
-    def process_refund(self, order_id: str, reason: str, amount: float = None) -> Dict[str, Any]:
+    def process_refund(self, order_id: str, reason: str, amount: float = None,
+                       idempotency_key: str = None) -> Dict[str, Any]:
         """处理退款 (高风险，需审批后调用)"""
         time.sleep(0.2)
         if order_id not in self.orders:
             return {"success": False, "error": "订单不存在"}
+        # 幂等：同一幂等键重复调用返回同一结果
+        if idempotency_key and idempotency_key in self.refund_records:
+            record = dict(self.refund_records[idempotency_key])
+            record["data"] = dict(record["data"])
+            record["data"]["duplicate"] = True
+            return record
         order = self.orders[order_id]
         refund_amount = amount or order["amount"]
         refund_id = "RF" + str(uuid.uuid4())[:8].upper()
+        previous_status = order["status"]
+        self.refund_previous_status[order_id] = previous_status
         order["status"] = "refunded"
-        return {
+        result = {
             "success": True,
             "data": {
                 "refund_id": refund_id,
@@ -84,8 +97,35 @@ class MockOrderSystem:
                 "status": "processing",
                 "expected_arrival": "1-3个工作日原路返回",
                 "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-            }
+                "rollback_point": {"order_id": order_id, "previous_status": previous_status},
+                "idempotency_key": idempotency_key,
+            },
         }
+        if idempotency_key:
+            self.refund_records[idempotency_key] = result
+        return result
+
+    def rollback_refund(self, order_id: str, refund_id: str = None,
+                        idempotency_key: str = None) -> Dict[str, Any]:
+        """回滚退款，恢复订单到退款前状态"""
+        time.sleep(0.1)
+        if order_id not in self.orders:
+            return {"success": False, "error": "订单不存在"}
+        previous = self.refund_previous_status.get(order_id)
+        if not previous:
+            return {"success": False, "error": "无可用回滚点"}
+        if previous in ("pending", "paid", "shipped", "delivered"):
+            self.orders[order_id]["status"] = previous
+        rollback = {
+            "rollback_id": "RB" + str(uuid.uuid4())[:8].upper(),
+            "order_id": order_id,
+            "refund_id": refund_id,
+            "restored_status": previous,
+            "idempotency_key": idempotency_key,
+            "rolled_back_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        self.rollback_records.append(rollback)
+        return {"success": True, "data": rollback}
 
 
 class MockTicketSystem:
@@ -93,10 +133,17 @@ class MockTicketSystem:
     
     def __init__(self):
         self.tickets = {}
+        self.idempotency_records = {}
     
-    def create_ticket(self, problem_desc: str, priority: str = "normal") -> Dict[str, Any]:
+    def create_ticket(self, problem_desc: str, priority: str = "normal",
+                      idempotency_key: str = None) -> Dict[str, Any]:
         """创建人工工单"""
         time.sleep(0.1)
+        if idempotency_key and idempotency_key in self.idempotency_records:
+            record = dict(self.idempotency_records[idempotency_key])
+            record["data"] = dict(record["data"])
+            record["data"]["duplicate"] = True
+            return record
         ticket_id = "TK" + time.strftime("%Y%m%d") + str(len(self.tickets) + 1).zfill(3)
         ticket = {
             "ticket_id": ticket_id,
@@ -105,9 +152,13 @@ class MockTicketSystem:
             "status": "open",
             "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
             "expected_response": "2小时内" if priority == "high" else "24小时内",
+            "idempotency_key": idempotency_key,
         }
         self.tickets[ticket_id] = ticket
-        return {"success": True, "data": ticket}
+        result = {"success": True, "data": ticket}
+        if idempotency_key:
+            self.idempotency_records[idempotency_key] = result
+        return result
 
 
 class MockPaymentSystem:
@@ -160,12 +211,15 @@ class MockBusinessSystems:
     def update_address(self, order_id, new_address):
         return self.order_system.update_address(order_id, new_address)
     
-    def process_refund(self, order_id, reason, amount=None):
-        return self.order_system.process_refund(order_id, reason, amount)
+    def process_refund(self, order_id, reason, amount=None, idempotency_key=None):
+        return self.order_system.process_refund(order_id, reason, amount, idempotency_key)
+
+    def rollback_refund(self, order_id, refund_id=None, idempotency_key=None):
+        return self.order_system.rollback_refund(order_id, refund_id, idempotency_key)
     
     # 工单相关
-    def create_ticket(self, problem_desc, priority="normal"):
-        return self.ticket_system.create_ticket(problem_desc, priority)
+    def create_ticket(self, problem_desc, priority="normal", idempotency_key=None):
+        return self.ticket_system.create_ticket(problem_desc, priority, idempotency_key)
     
     # 支付相关
     def query_payment(self, order_id):

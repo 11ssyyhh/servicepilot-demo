@@ -6,8 +6,22 @@ ServicePilot 配置文件
 
 # ============ 系统配置 ============
 SYSTEM_NAME = "ServicePilot"
-SYSTEM_VERSION = "0.1.0"
+SYSTEM_VERSION = "0.2.0"
 DEBUG = True
+
+# ============ 可观测与输出 ============
+OUTPUT_DIR = "output"
+
+# ============ LLM 配置 ============
+# 默认使用零依赖规则引擎；设置 SERVICE_PILOT_LLM_API_KEY 后自动切换 OpenAI 兼容接口
+LLM_API_KEY_ENV = "SERVICE_PILOT_LLM_API_KEY"
+LLM_BASE_URL_ENV = "SERVICE_PILOT_LLM_BASE_URL"
+LLM_MODEL_ENV = "SERVICE_PILOT_LLM_MODEL"
+LLM_DEFAULT_MODEL = "qwen-plus"
+
+# ============ RAG 阈值 ============
+RETRIEVAL_HUMAN_THRESHOLD = 0.45  # 低于该值建议转人工
+RETRIEVAL_ANSWER_THRESHOLD = 0.35 # 低于该值不直接使用知识库回复
 
 # ============ 风险等级定义 (L0-L3) ============
 # 对应PPT中的安全边界设计
@@ -100,7 +114,10 @@ INTENT_TYPES = [
 # ============ 模拟知识库 (FAQ) ============
 KNOWLEDGE_BASE = [
     {"q": "如何查询订单", "a": "您可以在'我的订单'页面查看所有订单状态，或提供订单号我帮您查询。", "category": "order_query"},
+    {"q": "我的订单现在什么状态", "a": "请提供订单号，我为您查询订单状态、物流信息和预计送达时间。", "category": "order_query"},
+    {"q": "订单什么时间发货", "a": "订单支付后24小时内发货，您可在'我的订单'查看物流单号。", "category": "order_query"},
     {"q": "退款多久到账", "a": "退款申请通过后，原路返回通常1-3个工作日到账，银行卡可能延迟至7个工作日。", "category": "refund"},
+    {"q": "怎么申请退款", "a": "您可以在订单详情页申请退款，审核通过后按原支付方式退回。", "category": "refund"},
     {"q": "可以修改收货地址吗", "a": "订单未发货前可以修改收货地址，已发货订单需联系快递拦截或拒收后重新下单。", "category": "address_change"},
     {"q": "物流一直不更新", "a": "物流信息可能存在延迟，建议24小时后再次查询。如超过48小时未更新，我帮您联系快递核实。", "category": "logistics_query"},
     {"q": "商品有质量问题", "a": "非常抱歉给您带来不便！请提供订单号和问题照片，我为您申请退换货，质量问题运费由我们承担。", "category": "complaint"},

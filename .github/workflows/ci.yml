@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run unit and integration tests
+        run: python -m unittest discover -s tests -t . -v
+      - name: Run golden/badcase evaluation
+        run: python evaluate.py
+      - name: Run full demo
+        run: python main.py 1
+      - name: Verify evidence artifacts
+        run: |
+          test -f output/trace.jsonl
+          test -f output/logs.jsonl
+          test -f output/metrics.json
+          test -f output/session.json
+          test -f output/summary.json
+          test -f output/eval_report.json
+      - name: Replay latest session
+        run: python replay.py

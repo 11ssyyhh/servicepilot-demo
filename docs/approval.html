@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServicePilot 人工审批</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg: #eef2f5;
+      --panel: #ffffff;
+      --line: #d9e1e8;
+      --ink: #15222e;
+      --muted: #66788c;
+      --accent: #0f766e;
+      --accent-soft: #d9f0ec;
+      --ok: #15803d;
+      --ok-soft: #e2f4e8;
+      --danger: #b42318;
+      --danger-soft: #fde8e4;
+      --warn: #b45309;
+      --warn-soft: #fdf0dc;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    button { font: inherit; cursor: pointer; }
+
+    .app { min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 18px;
+      background: #10212b;
+      color: #f5f8fa;
+      flex: 0 0 auto;
+    }
+    .brand {
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #2dd4bf, #0ea5e9);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+    .brand-name { font-size: 16px; font-weight: 700; }
+    .brand-sub { font-size: 12px; color: #9fb3c1; }
+    .mode-tag {
+      margin-left: auto;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(45, 212, 191, .14);
+      color: #8df3e3;
+      font-size: 12px;
+    }
+
+    .workspace {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 700;
+      color: #33465a;
+      flex: 0 0 auto;
+    }
+    .panel-head .sub { margin-left: auto; font-weight: 500; color: var(--muted); font-size: 12px; }
+
+    .approval-list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .approval-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #fff;
+      text-align: left;
+      color: var(--ink);
+    }
+    .approval-item:hover { border-color: #a9c6cf; }
+    .approval-item.active { border-color: var(--accent); background: var(--accent-soft); }
+    .approval-item-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .risk-tag {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+    .approval-item-desc { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+    .detail-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .detail-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .detail-reason { font-size: 13px; color: var(--muted); line-height: 1.55; }
+    .kv-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+    .kv {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 10px 12px;
+      background: #f8fafb;
+    }
+    .kv-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .kv-value { font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #33465a;
+      margin: 16px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .evidence-list, .audit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .evidence-row {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 9px 11px;
+      font-size: 12px;
+      color: #40566b;
+      background: #fbfcfd;
+      overflow-wrap: anywhere;
+    }
+    .audit-row {
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      border-radius: 0 7px 7px 0;
+      padding: 9px 11px;
+      font-size: 12px;
+      color: #24534f;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-wrap: anywhere;
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--line);
+      background: #f8fafc;
+      flex: 0 0 auto;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 0;
+      border-radius: 7px;
+      padding: 0 16px;
+      height: 36px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .btn-approve { background: var(--ok); color: #fff; }
+    .btn-reject { background: var(--danger); color: #fff; }
+    .btn-ghost {
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      margin-left: auto;
+    }
+    .empty { padding: 18px; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 760px) {
+      .workspace { grid-template-columns: 1fr; grid-template-rows: auto minmax(420px, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><i data-lucide="shield-check" width="17" height="17"></i></div>
+      <div>
+        <div class="brand-name">ServicePilot 审批台</div>
+        <div class="brand-sub">L2 高风险操作 · 人工确认</div>
+      </div>
+      <div class="mode-tag" id="modeTag">演示数据</div>
+    </header>
+
+    <main class="workspace">
+      <aside class="panel">
+        <div class="panel-head">
+          <i data-lucide="inbox" width="15" height="15"></i>
+          待审批
+          <span class="sub" id="count">0</span>
+        </div>
+        <div class="approval-list" id="approvalList"></div>
+      </aside>
+
+      <section class="panel">
+        <div class="panel-head">
+          <i data-lucide="file-check" width="15" height="15"></i>
+          审批详情
+        </div>
+        <div class="detail-body" id="detailBody"></div>
+        <div class="action-bar">
+          <button class="btn btn-approve" id="approveBtn"><i data-lucide="check" width="15" height="15"></i>通过</button>
+          <button class="btn btn-reject" id="rejectBtn"><i data-lucide="x" width="15" height="15"></i>拒绝</button>
+          <button class="btn btn-ghost" id="refreshBtn"><i data-lucide="refresh-cw" width="15" height="15"></i>刷新</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const SAMPLE = [
+      {
+        id: "demo-approval-001",
+        action: "process_refund",
+        reason: "订单 ORD20260816002 退款申请，金额 459.00 元，属于 L2 高风险操作",
+        risk_level: "L2",
+        status: "pending",
+        evidence: [
+          { desc: "执行退款(审批通过后)", skill: "RefundProcess", risk_level: "L2" },
+          { order: "ORD20260816002", amount: 459.00, refund_type: "原路返回" }
+        ],
+        rollback_point: { order_id: "ORD20260816002", previous_status: "delivered" }
+      }
+    ];
+
+    let approvals = [];
+    let decisions = [];
+    let current = null;
+    let apiMode = false;
+
+    const listEl = document.getElementById("approvalList");
+    const detailEl = document.getElementById("detailBody");
+    const countEl = document.getElementById("count");
+    const modeTag = document.getElementById("modeTag");
+
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"
+      }[c]));
+    }
+
+    function refreshIcons() {
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function loadApprovals() {
+      try {
+        const res = await fetch("/api/approvals");
+        if (!res.ok) throw new Error("no api");
+        const data = await res.json();
+        approvals = data.approvals || [];
+        apiMode = true;
+        modeTag.textContent = "已连接审批服务";
+      } catch (e) {
+        approvals = SAMPLE;
+        apiMode = false;
+        modeTag.textContent = "演示数据";
+      }
+      try {
+        const res = await fetch("/api/decisions");
+        if (res.ok) {
+          const data = await res.json();
+          decisions = data.decisions || [];
+        }
+      } catch (e) { /* keep local */ }
+      render();
+    }
+
+    function render() {
+      countEl.textContent = approvals.length;
+      listEl.innerHTML = "";
+      if (!approvals.length) {
+        listEl.innerHTML = '<div class="empty">暂无待审批事项</div>';
+      }
+      approvals.forEach((a, i) => {
+        const item = document.createElement("button");
+        item.className = "approval-item" + (current && current.id === a.id ? " active" : "");
+        item.innerHTML = `
+          <span class="approval-item-head">
+            <i data-lucide="rotate-ccw" width="14" height="14"></i>
+            ${esc(a.action)}
+            <span class="risk-tag">${esc(a.risk_level)}</span>
+          </span>
+          <span class="approval-item-desc">${esc(a.reason)}</span>`;
+        item.addEventListener("click", () => select(a));
+        listEl.appendChild(item);
+      });
+      if (!current && approvals.length) select(approvals[0]);
+      renderDetail();
+      refreshIcons();
+    }
+
+    function select(a) {
+      current = a;
+      document.querySelectorAll(".approval-item").forEach((el, i) => {
+        el.classList.toggle("active", approvals[i] && approvals[i].id === a.id);
+      });
+      renderDetail();
+    }
+
+    function renderDetail() {
+      if (!current) {
+        detailEl.innerHTML = '<div class="empty">选择左侧审批项查看详情</div>';
+        return;
+      }
+      const a = current;
+      const evidence = (a.evidence || []).map(e => `<div class="evidence-row">${esc(JSON.stringify(e))}</div>`).join("");
+      const rollback = a.rollback_point
+        ? `<div class="evidence-row">回滚点：${esc(JSON.stringify(a.rollback_point))}</div>`
+        : "";
+      const audit = decisions.filter(d => d.id === a.id)
+        .map(d => `<div class="audit-row"><i data-lucide="shield-check" width="14" height="14"></i>${esc(d.status)} · ${esc(d.approver)} · ${esc(d.reason || "")}</div>`)
+        .join("");
+      detailEl.innerHTML = `
+        <div class="detail-title">${esc(a.action)}</div>
+        <div class="detail-reason">${esc(a.reason)}</div>
+        <div class="kv-grid">
+          <div class="kv"><div class="kv-label">审批 ID</div><div class="kv-value">${esc(a.id)}</div></div>
+          <div class="kv"><div class="kv-label">风险等级</div><div class="kv-value">${esc(a.risk_level)}</div></div>
+          <div class="kv"><div class="kv-label">状态</div><div class="kv-value">${esc(a.status)}</div></div>
+          <div class="kv"><div class="kv-label">幂等键</div><div class="kv-value">${esc(a.idempotency_key || "-")}</div></div>
+        </div>
+        <div class="section-title"><i data-lucide="scroll-text" width="14" height="14"></i>审批依据与证据</div>
+        <div class="evidence-list">${evidence}${rollback || ""}</div>
+        ${audit ? `<div class="section-title"><i data-lucide="history" width="14" height="14"></i>审计记录</div><div class="audit-list">${audit}</div>` : ""}
+      `;
+      refreshIcons();
+    }
+
+    async function decide(approved) {
+      if (!current) return;
+      const payload = {
+        approval_id: current.id,
+        approved,
+        approver: "web_operator",
+        reason: approved ? "人工审批通过，证据完整" : "人工审批拒绝，转人工核实"
+      };
+      if (apiMode) {
+        try {
+          const res = await fetch("/api/decide", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) throw new Error("decide failed");
+          const data = await res.json();
+          decisions.push(data.decision);
+          approvals = approvals.filter(a => a.id !== current.id);
+          current = null;
+        } catch (e) {
+          alert("审批服务不可用，已按演示模式记录");
+          decisions.push({ ...payload, status: approved ? "approved" : "rejected", decided_at: new Date().toISOString() });
+          approvals = approvals.filter(a => a.id !== current.id);
+          current = null;
+        }
+      } else {
+        decisions.push({ ...payload, status: approved ? "approved" : "rejected", decided_at: new Date().toISOString() });
+        approvals = approvals.filter(a => a.id !== current.id);
+        current = null;
+      }
+      render();
+    }
+
+    document.getElementById("approveBtn").addEventListener("click", () => decide(true));
+    document.getElementById("rejectBtn").addEventListener("click", () => decide(false));
+    document.getElementById("refreshBtn").addEventListener("click", loadApprovals);
+    loadApprovals();
+  </script>
+</body>
+</html>

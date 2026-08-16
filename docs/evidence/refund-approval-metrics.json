@@ -1,0 +1,18 @@
+{
+  "conversations": 1.0,
+  "agents_called": 7.0,
+  "skill_calls": 0,
+  "mcp_calls": 3.0,
+  "llm_calls": 3.0,
+  "approval_requests": 1.0,
+  "approvals_granted": 1.0,
+  "approvals_rejected": 0,
+  "rollbacks": 0,
+  "tickets_created": 0,
+  "tool_successes": 3.0,
+  "tool_failures": 0,
+  "rag_retrievals": 1.0,
+  "total_tokens": 193,
+  "total_cost_usd": 0.0,
+  "e2e_latency_ms": 301.69
+}

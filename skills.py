@@ -167,36 +167,61 @@ class ProblemTypeRouter(BaseSkill):
 # ============ 知识类Skill ============
 
 class FAQRetrieval(BaseSkill):
-    """FAQ检索Skill - 常见问题向量检索(简化版)"""
+    """FAQ检索Skill - 中文 n-gram 相关性检索"""
     
     def __init__(self):
-        super().__init__("FAQRetrieval", "knowledge", "常见问题向量检索")
+        super().__init__("FAQRetrieval", "knowledge", "常见问题向量检索(n-gram评分)")
     
-    def execute(self, query: str, top_k: int = 3, **kwargs) -> Dict[str, Any]:
-        # 简化版：基于关键词匹配，实际可用向量数据库
+    @staticmethod
+    def _ngrams(text: str, n: int = 2) -> set:
+        text = re.sub(r"[^\u4e00-\u9fa5a-zA-Z0-9]+", "", text)
+        return {text[i:i + n] for i in range(max(0, len(text) - n + 1))}
+    
+    def _score(self, query: str, faq: Dict, intent_hint: str = None) -> float:
+        q_grams = self._ngrams(query)
+        a_grams = self._ngrams(faq["q"])
+        q_words = set(re.findall(r'[\u4e00-\u9fa5]+', query))
+        a_words = set(re.findall(r'[\u4e00-\u9fa5]+', faq["q"]))
+        
+        overlap_grams = len(q_grams & a_grams)
+        containment = overlap_grams / max(len(q_grams), 1)
+        keyword_overlap = len(q_words & a_words) / max(len(q_words | a_words), 1)
+        
+        score = 0.65 * containment + 0.35 * keyword_overlap
+        if intent_hint and intent_hint == faq["category"]:
+            score += 0.42
+        # 答案侧也参与评分，避免 FAQ 问句与用户表述差异过大
+        a2_grams = self._ngrams(faq["a"])
+        answer_containment = len(q_grams & a2_grams) / max(len(q_grams), 1)
+        score += 0.2 * answer_containment
+        return min(round(score, 4), 0.99)
+    
+    def execute(self, query: str, top_k: int = 3, intent_hint: str = None,
+                **kwargs) -> Dict[str, Any]:
+        # 中文 n-gram + 关键词 + 意图类目加权，实际环境可替换为向量检索
         results = []
-        query_words = set(re.findall(r'[\u4e00-\u9fa5]+', query))
         
         for item in KNOWLEDGE_BASE:
-            q_words = set(re.findall(r'[\u4e00-\u9fa5]+', item["q"]))
-            overlap = len(query_words & q_words)
-            if overlap > 0:
-                results.append({
-                    "question": item["q"],
-                    "answer": item["a"],
-                    "category": item["category"],
-                    "score": overlap / max(len(q_words), 1),
-                })
+            score = self._score(query, item, intent_hint)
+            results.append({
+                "question": item["q"],
+                "answer": item["a"],
+                "category": item["category"],
+                "score": score,
+                "source": "faq.knowledge_base",
+                "evidence": {"kb_id": item["category"], "match": "char_ngram+keyword"},
+            })
         
         results.sort(key=lambda x: x["score"], reverse=True)
-        top_results = results[:top_k]
+        top_results = [r for r in results if r["score"] > 0.05][:top_k]
         confidence = top_results[0]["score"] if top_results else 0.0
         
         return {
             "success": True,
             "result": top_results,
             "confidence": min(confidence, 0.95),
-            "total_found": len(results),
+            "total_scored": len(results),
+            "total_found": len(top_results),
         }
 
 
@@ -207,15 +232,25 @@ class ProductDocRAG(BaseSkill):
         super().__init__("ProductDocRAG", "knowledge", "产品文档RAG检索")
     
     def execute(self, query: str, product_id: str = None, **kwargs) -> Dict[str, Any]:
-        # Mock: 返回模拟的产品文档片段
+        # Mock: 返回模拟的产品文档片段，并按查询相关性打分
         mock_docs = [
-            {"doc": "产品支持7天无理由退换货，质量问题30天内包换。", "source": "售后政策.pdf"},
-            {"doc": "产品保修期为1年，非人为损坏免费维修。", "source": "保修条款.pdf"},
+            {"doc": "产品支持7天无理由退换货，质量问题30天内包换。",
+             "source": "售后政策.pdf", "keywords": ["退", "换货", "质量", "退款"]},
+            {"doc": "产品保修期为1年，非人为损坏免费维修。",
+             "source": "保修条款.pdf", "keywords": ["保修", "维修", "损坏"]},
         ]
+        query_words = set(re.findall(r'[\u4e00-\u9fa5]+', query))
+        scored = []
+        for doc in mock_docs:
+            hits = sum(1 for kw in doc["keywords"] if kw in query)
+            overlap = len(query_words & set(doc["keywords"]))
+            score = min(0.5 + hits * 0.2 + overlap * 0.1, 0.95)
+            scored.append({"doc": doc["doc"], "source": doc["source"], "score": round(score, 3)})
+        scored.sort(key=lambda x: x["score"], reverse=True)
         return {
             "success": True,
-            "result": mock_docs,
-            "confidence": 0.7,
+            "result": scored,
+            "confidence": scored[0]["score"] if scored else 0.0,
         }
 
 
@@ -227,9 +262,29 @@ class HistoryCaseSearch(BaseSkill):
     
     def execute(self, query: str, **kwargs) -> Dict[str, Any]:
         mock_cases = [
-            {"case_id": "WO202608001", "problem": "物流延迟", "solution": "联系快递加急，补偿5元优惠券"},
+            {"case_id": "WO202608001", "problem": "物流延迟", "solution": "联系快递加急，补偿5元优惠券",
+             "keywords": ["物流", "延迟", "快递"]},
+            {"case_id": "WO202608002", "problem": "退款到账慢", "solution": "核实支付渠道后加急退款",
+             "keywords": ["退款", "到账"]},
+            {"case_id": "WO202608003", "problem": "地址写错", "solution": "未发货订单由客服协助修改地址",
+             "keywords": ["地址", "写错"]},
         ]
-        return {"success": True, "result": mock_cases, "confidence": 0.6}
+        scored = []
+        for case in mock_cases:
+            hits = sum(1 for kw in case["keywords"] if kw in query)
+            score = min(0.35 + hits * 0.3, 0.95)
+            scored.append({
+                "case_id": case["case_id"],
+                "problem": case["problem"],
+                "solution": case["solution"],
+                "score": round(score, 3),
+            })
+        scored.sort(key=lambda x: x["score"], reverse=True)
+        return {
+            "success": True,
+            "result": scored,
+            "confidence": scored[0]["score"] if scored else 0.0,
+        }
 
 
 # ============ 执行类Skill (调用Mock业务系统) ============
@@ -260,7 +315,8 @@ class RefundProcess(BaseSkill):
         self.risk_level = "L2"
     
     def execute(self, order_id: str, reason: str, amount: float = None, 
-                approved: bool = False, **kwargs) -> Dict[str, Any]:
+                approved: bool = False, idempotency_key: str = None,
+                approver: str = "user", approval_id: str = None, **kwargs) -> Dict[str, Any]:
         if not approved:
             return {
                 "success": False,
@@ -270,13 +326,18 @@ class RefundProcess(BaseSkill):
                 "need_approval": True,
                 "risk_level": "L2",
             }
-        result = self.mock_system.process_refund(order_id, reason, amount)
+        result = self.mock_system.process_refund(order_id, reason, amount, idempotency_key)
+        data = result.get("data") or {}
         return {
             "success": result.get("success", False),
-            "result": result.get("data"),
+            "result": data,
             "confidence": 1.0 if result.get("success") else 0.0,
             "risk_level": "L2",
             "approved": True,
+            "approval_id": approval_id,
+            "approver": approver,
+            "idempotency_key": idempotency_key,
+            "rollback_point": data.get("rollback_point"),
         }
 
 
@@ -288,14 +349,18 @@ class AddressUpdate(BaseSkill):
         self.mock_system = mock_system
         self.risk_level = "L1"
     
-    def execute(self, order_id: str, new_address: str, **kwargs) -> Dict[str, Any]:
+    def execute(self, order_id: str, new_address: str,
+                idempotency_key: str = None, **kwargs) -> Dict[str, Any]:
         result = self.mock_system.update_address(order_id, new_address)
+        data = result.get("data") or {}
         return {
             "success": result.get("success", False),
-            "result": result.get("data"),
+            "result": data,
             "confidence": 1.0 if result.get("success") else 0.0,
             "risk_level": "L1",
             "error": result.get("error"),
+            "idempotency_key": idempotency_key,
+            "rollback_point": {"order_id": order_id, "old_address": data.get("old_address")} if result.get("success") else None,
         }
 
 
@@ -306,12 +371,34 @@ class TicketCreate(BaseSkill):
         super().__init__("TicketCreate", "execution", "人工工单创建")
         self.mock_system = mock_system
     
-    def execute(self, problem_desc: str, priority: str = "normal", **kwargs) -> Dict[str, Any]:
-        result = self.mock_system.create_ticket(problem_desc, priority)
+    def execute(self, problem_desc: str, priority: str = "normal",
+                idempotency_key: str = None, **kwargs) -> Dict[str, Any]:
+        result = self.mock_system.create_ticket(problem_desc, priority, idempotency_key)
         return {
             "success": result.get("success", False),
             "result": result.get("data"),
             "confidence": 1.0 if result.get("success") else 0.0,
+            "idempotency_key": idempotency_key,
+        }
+
+
+class RollbackOperation(BaseSkill):
+    """回滚操作Skill - 用于执行失败或审计时恢复业务状态"""
+
+    def __init__(self, mock_system):
+        super().__init__("RollbackOperation", "execution", "业务回滚操作")
+        self.mock_system = mock_system
+        self.risk_level = "L2"
+
+    def execute(self, order_id: str, refund_id: str = None,
+                idempotency_key: str = None, **kwargs) -> Dict[str, Any]:
+        result = self.mock_system.rollback_refund(order_id, refund_id, idempotency_key)
+        return {
+            "success": result.get("success", False),
+            "result": result.get("data"),
+            "confidence": 1.0 if result.get("success") else 0.0,
+            "risk_level": "L2",
+            "error": result.get("error"),
         }
 
 
@@ -410,6 +497,26 @@ class ConversationSummary(BaseSkill):
         }
 
 
+class KnowledgeUpdate(BaseSkill):
+    """知识库更新建议Skill - 仅生成草案，正式更新需人工审核"""
+
+    def __init__(self):
+        super().__init__("KnowledgeUpdate", "memory", "知识库更新建议")
+
+    def execute(self, intent: str = None, issue_resolved: bool = True,
+                summary: str = "", **kwargs) -> Dict[str, Any]:
+        suggestions = []
+        if not issue_resolved:
+            suggestions.append(f"建议补充意图={intent}的FAQ条目及失败处置话术")
+        if summary and len(summary) > 20:
+            suggestions.append("建议将该案例沉淀为历史相似案例，供后续检索复用")
+        return {
+            "success": True,
+            "result": {"suggestions": suggestions, "requires_review": True},
+            "confidence": 0.8,
+        }
+
+
 class ServiceReport(BaseSkill):
     """服务报告生成Skill"""
     
@@ -419,13 +526,18 @@ class ServiceReport(BaseSkill):
     def execute(self, state_dict: Dict, **kwargs) -> Dict[str, Any]:
         report = {
             "session_id": state_dict.get("session_id"),
+            "trace_id": state_dict.get("trace_id"),
             "intent": state_dict.get("intent"),
             "resolved": state_dict.get("issue_resolved"),
             "satisfaction": state_dict.get("satisfaction_score"),
             "agent_count": 7,
             "skill_calls": state_dict.get("execution_count", 0),
             "risk_level": state_dict.get("risk_level"),
-            "duration": "模拟时长: 45秒",
+            "retrieval_confidence": state_dict.get("retrieval_confidence"),
+            "approval_count": len(state_dict.get("approval_history", [])),
+            "ticket_count": len(state_dict.get("tickets", [])),
+            "needs_human": state_dict.get("needs_human", False),
+            "duration": "真实耗时以 output/metrics.json e2e_latency_ms 为准",
         }
         return {"success": True, "result": report, "confidence": 0.9}
 
@@ -448,12 +560,14 @@ def register_all_skills(mock_system) -> Dict[str, BaseSkill]:
         "RefundProcess": RefundProcess(mock_system),
         "AddressUpdate": AddressUpdate(mock_system),
         "TicketCreate": TicketCreate(mock_system),
+        "RollbackOperation": RollbackOperation(mock_system),
         # 治理类
         "ComplianceCheck": ComplianceCheck(),
         "SensitiveWordFilter": SensitiveWordFilter(),
         "RiskEscalation": RiskEscalation(),
         # 沉淀类
         "ConversationSummary": ConversationSummary(),
+        "KnowledgeUpdate": KnowledgeUpdate(),
         "ServiceReport": ServiceReport(),
     }
     return skills
