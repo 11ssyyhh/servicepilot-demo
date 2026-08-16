@@ -210,7 +210,7 @@
 
     .metrics {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       padding: 12px;
       border-bottom: 1px solid var(--line);
@@ -324,6 +324,10 @@
             <div class="metric-value" id="metricRisk">-</div>
           </div>
           <div class="metric">
+            <div class="metric-label">紧急度</div>
+            <div class="metric-value" id="metricUrgency">-</div>
+          </div>
+          <div class="metric">
             <div class="metric-label">链路耗时</div>
             <div class="metric-value" id="metricTime">-</div>
           </div>
@@ -354,82 +358,86 @@
     const scenarios = {
       order: {
         label: "订单查询",
-        desc: "只读 · 自动执行",
+        desc: "只读诊断 · 自动执行",
         risk: "L0",
+        urgency: "normal",
         riskClass: "risk-ok",
         color: "#0f766e",
         icon: "package-search",
-        user: "我的订单 SP20260816001 现在到哪了？",
-        reply: "您的订单 SP20260816001 已于今天 14:32 从上海分拨中心发出，当前物流状态为“运输中”，预计明天 18:00 前送达。",
+        user: "我的订单ORD20260816001现在什么状态了？帮我查一下",
+        reply: "您好，您的订单ORD20260816001状态为shipped，商品：智能蓝牙耳机 Pro，物流：运输中。如有其他问题请随时告诉我。",
         steps: [
-          { agent: "IntentRouter", title: "意图识别", detail: "order_query · 置信度 0.96 · 情绪平稳" },
-          { agent: "KnowledgeRetriever", title: "知识检索", detail: "FAQ 命中 1 条，无需补充产品文档" },
-          { agent: "TaskPlanner", title: "任务规划", detail: "单步任务 OrderQuery · L0 只读" },
-          { agent: "ToolExecutor", title: "工具执行", detail: "调用订单系统，返回物流轨迹" },
+          { agent: "IntentRouter", title: "意图路由", detail: "意图=order_query | 情绪=0.50 | 紧急度=normal" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到3条结果，置信度=0.00" },
+          { agent: "TaskPlanner", title: "任务规划", detail: "规划2步执行 | 整体风险=L0" },
+          { agent: "ToolExecutor", title: "工具执行", detail: "OrderQuery -> L0 成功" },
           { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，无敏感内容" },
-          { agent: "Verifier", title: "结果验证", detail: "回复已覆盖用户问题" },
-          { agent: "MemoryScribe", title: "知识沉淀", detail: "生成对话摘要与服务记录" }
+          { agent: "Verifier", title: "效果验证", detail: "问题已解决 | 满意度=0.85" },
+          { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和服务报告" }
+        ]
+      },
+      refund: {
+        label: "退款申请",
+        desc: "高风险 · 需确认审批",
+        risk: "L2",
+        urgency: "normal",
+        riskClass: "risk-high",
+        color: "#b42318",
+        icon: "rotate-ccw",
+        user: "我要退款，订单ORD20260816001不想要了",
+        reply: "您好，已为您查询到订单信息。退款申请需要您确认后提交，确认后1-3个工作日原路返回。请问是否确认申请退款？",
+        steps: [
+          { agent: "IntentRouter", title: "意图路由", detail: "意图=refund | 情绪=0.50 | 紧急度=normal" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到3条结果，置信度=0.00" },
+          { agent: "TaskPlanner", title: "任务规划", detail: "规划4步执行 | 整体风险=L2" },
+          { agent: "ToolExecutor", title: "工具执行", detail: "OrderQuery L0 成功；RiskEscalation L2 成功；RefundProcess 需审批，暂停执行", mode: "warn" },
+          { agent: "QualityGuard", title: "质量审核", detail: "高风险操作，回复中提示用户确认" },
+          { agent: "Verifier", title: "效果验证", detail: "问题已解决 | 满意度=0.85" },
+          { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和服务报告" }
         ]
       },
       address: {
         label: "修改地址",
         desc: "低风险 · 自动执行",
         risk: "L1",
+        urgency: "normal",
         riskClass: "risk-mid",
         color: "#b45309",
         icon: "map-pin",
-        user: "帮我改一下收货地址，改成上海市浦东新区世纪大道 100 号 8 楼",
-        reply: "收货地址已更新：上海市浦东新区世纪大道 100 号 8 楼。该操作已留痕，可在服务记录中追溯。",
+        user: "帮我把订单ORD20260816001的收货地址改成南京市玄武区zzz路3号",
+        reply: "您好，正在为您处理地址修改。",
         steps: [
-          { agent: "IntentRouter", title: "意图识别", detail: "address_change · 置信度 0.91 · 情绪平稳" },
-          { agent: "KnowledgeRetriever", title: "知识检索", detail: "确认地址修改规则与可执行范围" },
-          { agent: "TaskPlanner", title: "任务规划", detail: "单步任务 AddressUpdate · L1 低风险" },
-          { agent: "ToolExecutor", title: "工具执行", detail: "调用地址系统，更新收货地址并留痕" },
-          { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，操作已入审计日志" },
-          { agent: "Verifier", title: "结果验证", detail: "确认新地址生效" },
-          { agent: "MemoryScribe", title: "知识沉淀", detail: "生成对话摘要与服务记录" }
-        ]
-      },
-      refund: {
-        label: "退款申请",
-        desc: "高风险 · 人工审批",
-        risk: "L2",
-        riskClass: "risk-high",
-        color: "#b42318",
-        icon: "rotate-ccw",
-        user: "我买的商品有质量问题，申请退款",
-        reply: "您的退款申请已受理：工单 RF20260816001 已创建，金额 ￥299.00 将在审批通过后原路退回，预计 1-3 个工作日到账。",
-        steps: [
-          { agent: "IntentRouter", title: "意图识别", detail: "refund · 置信度 0.94 · 情绪略不满" },
-          { agent: "KnowledgeRetriever", title: "知识检索", detail: "命中退款政策，确认商品符合退款条件" },
-          { agent: "TaskPlanner", title: "任务规划", detail: "多步任务 RefundProcess · L2 高风险" },
-          { agent: "ToolExecutor", title: "等待审批", detail: "人工审批节点：等待审批人确认", mode: "warn" },
-          { agent: "ToolExecutor", title: "审批通过", detail: "审批人已通过，开始执行退款", mode: "danger" },
-          { agent: "QualityGuard", title: "质量审核", detail: "退款金额与政策一致，合规通过" },
-          { agent: "Verifier", title: "结果验证", detail: "退款工单已生效，回复已覆盖用户问题" },
-          { agent: "MemoryScribe", title: "知识沉淀", detail: "生成对话摘要与服务记录" }
+          { agent: "IntentRouter", title: "意图路由", detail: "意图=address_change | 情绪=0.50 | 紧急度=normal" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到3条结果，置信度=0.00" },
+          { agent: "TaskPlanner", title: "任务规划", detail: "规划2步执行 | 整体风险=L1" },
+          { agent: "ToolExecutor", title: "工具执行", detail: "OrderQuery L0 成功；AddressUpdate L1 失败（订单已发货，仅未发货订单可修改），自动创建工单转人工", mode: "danger" },
+          { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，无敏感内容" },
+          { agent: "Verifier", title: "效果验证", detail: "问题已解决 | 满意度=0.85" },
+          { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和服务报告" }
         ]
       },
       complaint: {
         label: "用户投诉",
-        desc: "高紧急 · 转人工",
-        risk: "HIGH",
+        desc: "高紧急 · 自动转人工",
+        risk: "L0",
+        urgency: "high",
         riskClass: "risk-high",
         color: "#b42318",
         icon: "flag",
-        user: "你们的客服太差了，等了半天都没人理我，我要投诉！",
-        reply: "非常抱歉给您带来不好的体验。您的诉求已升级为人工投诉工单 TK20260816001，专属客服将在 5 分钟内联系您。",
+        user: "你们什么垃圾客服！等了三天都没解决问题，我要投诉！",
+        reply: "非常抱歉给您带来不好的体验，已为您创建高优先级工单，客服会尽快联系您。",
         steps: [
-          { agent: "IntentRouter", title: "意图识别", detail: "complaint · 置信度 0.98 · 情绪愤怒" },
-          { agent: "KnowledgeRetriever", title: "知识检索", detail: "命中投诉处理流程与升级策略" },
-          { agent: "TaskPlanner", title: "任务规划", detail: "紧急任务：直接升级人工 + 创建工单" },
-          { agent: "ToolExecutor", title: "转人工", detail: "已转入人工队列，优先级最高", mode: "danger" },
+          { agent: "IntentRouter", title: "意图路由", detail: "意图=complaint | 情绪=0.20 | 紧急度=high" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到3条结果，置信度=0.00" },
+          { agent: "TaskPlanner", title: "任务规划", detail: "规划2步执行 | 整体风险=L0" },
+          { agent: "ToolExecutor", title: "工具执行", detail: "TicketCreate -> L0 成功（高优先级工单）", mode: "danger" },
           { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，回复语气已校准" },
-          { agent: "Verifier", title: "结果验证", detail: "确认人工客服已接单" },
-          { agent: "MemoryScribe", title: "知识沉淀", detail: "生成投诉摘要并标记跟进" }
+          { agent: "Verifier", title: "效果验证", detail: "问题已解决 | 满意度=0.85" },
+          { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和服务报告" }
         ]
       }
     };
+
 
     const chatScroll = document.getElementById("chatScroll");
     const traceList = document.getElementById("traceList");
@@ -439,6 +447,7 @@
     const scenarioList = document.getElementById("scenarioList");
     const metricIntent = document.getElementById("metricIntent");
     const metricRisk = document.getElementById("metricRisk");
+    const metricUrgency = document.getElementById("metricUrgency");
     const metricTime = document.getElementById("metricTime");
     let running = false;
 
@@ -482,6 +491,7 @@
       traceCount.textContent = "0 / 0";
       metricIntent.textContent = "-";
       metricRisk.textContent = "-";
+      metricUrgency.textContent = "-";
       metricTime.textContent = "-";
     }
 
@@ -525,6 +535,7 @@
       const startedAt = performance.now();
       metricIntent.textContent = s.label;
       metricRisk.textContent = s.risk;
+      metricUrgency.textContent = s.urgency;
 
       for (let i = 0; i < s.steps.length; i++) {
         const step = s.steps[i];
