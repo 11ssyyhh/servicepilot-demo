@@ -76,4 +76,20 @@ def mask_state_snapshot(state_dict: dict) -> dict:
     snapshot["messages"] = masked_messages
     if snapshot.get("summary"):
         snapshot["summary"], _ = mask_pii(str(snapshot["summary"]))
+    for key in ("task_plan", "execution_records", "rollback_points",
+                "tickets", "final_reply"):
+        if snapshot.get(key) is not None:
+            snapshot[key] = _mask_value(snapshot[key])
     return snapshot
+
+
+def _mask_value(value):
+    """递归脱敏字典/列表/字符串中的 PII"""
+    if isinstance(value, str):
+        masked, _ = mask_pii(value)
+        return masked
+    if isinstance(value, dict):
+        return {k: _mask_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_mask_value(v) for v in value]
+    return value

@@ -387,7 +387,7 @@
         reply: "您好，您的订单ORD20260816001状态为shipped，商品：智能蓝牙耳机 Pro，物流：运输中。如有其他问题请随时告诉我。",
         steps: [
           { agent: "IntentRouter", title: "意图路由", detail: "意图=order_query | 情绪=0.50 | 紧急度=normal" },
-          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到8条结果，置信度=0.55，证据：faq.knowledge_base" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到8条结果，置信度=0.62，证据：faq.knowledge_base" },
           { agent: "TaskPlanner", title: "任务规划", detail: "规划2步执行 | 整体风险=L0" },
           { agent: "ToolExecutor", title: "工具执行", detail: "OrderQuery -> L0 成功" },
           { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，无敏感内容" },
@@ -467,12 +467,52 @@
         reply: "非常抱歉给您带来不好的体验，已为您创建高优先级工单TK20260816003，客服会在2小时内联系您处理。",
         steps: [
           { agent: "IntentRouter", title: "意图路由", detail: "意图=complaint | 情绪=0.20 | 紧急度=high" },
-          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到6条结果，置信度=0.50，证据：faq.knowledge_base" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到6条结果，置信度=0.46，证据：faq.knowledge_base" },
           { agent: "TaskPlanner", title: "任务规划", detail: "规划2步执行 | 整体风险=L0" },
           { agent: "ToolExecutor", title: "工具执行", detail: "TicketCreate -> L0 成功（高优先级工单 TK20260816003，幂等键）", mode: "danger" },
           { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，回复语气已校准" },
           { agent: "Verifier", title: "效果验证", detail: "高优先级工单已创建 | 满意度=0.85" },
           { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和服务报告" }
+        ]
+      },
+      return: {
+        label: "退货咨询",
+        desc: "知识库 · 自动闭环",
+        risk: "L0",
+        urgency: "normal",
+        riskClass: "risk-ok",
+        color: "#0f766e",
+        icon: "package-open",
+        user: "我要申请退货，流程是什么？",
+        reply: "您可以在订单详情页点击'申请退货'，选择退货原因并提交，我们会在24小时内审核。",
+        steps: [
+          { agent: "IntentRouter", title: "意图路由", detail: "意图=return | 情绪=0.50 | 紧急度=normal" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到10条结果，置信度=0.70，证据：faq.knowledge_base" },
+          { agent: "TaskPlanner", title: "任务规划", detail: "规划1步执行 | 整体风险=L0" },
+          { agent: "ToolExecutor", title: "工具执行", detail: "generate_reply_from_kb -> L0 自动回复" },
+          { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，无敏感内容" },
+          { agent: "Verifier", title: "效果验证", detail: "问题已解决 | 满意度=0.85" },
+          { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和服务报告" }
+        ]
+      },
+      unknown: {
+        label: "未知问题",
+        desc: "低置信度 · 转人工",
+        risk: "L0",
+        urgency: "normal",
+        riskClass: "risk-mid",
+        color: "#b45309",
+        icon: "help-circle",
+        user: "今天天气怎么样？",
+        reply: "抱歉，这个问题超出了我的服务范围，已为您创建转人工工单TK20260816004，客服将尽快联系您。",
+        steps: [
+          { agent: "IntentRouter", title: "意图路由", detail: "意图=other | 情绪=0.50 | 紧急度=normal" },
+          { agent: "KnowledgeRetriever", title: "知识检索", detail: "检索到0条高相关结果，置信度=0.11，低于转人工阈值", mode: "warn" },
+          { agent: "TaskPlanner", title: "任务规划", detail: "低置信度，规划转人工处理 | 整体风险=L0" },
+          { agent: "ToolExecutor", title: "工具执行", detail: "TicketCreate -> L0 成功（转人工工单 TK20260816004）", mode: "danger" },
+          { agent: "QualityGuard", title: "质量审核", detail: "合规检查通过，无敏感内容" },
+          { agent: "Verifier", title: "效果验证", detail: "问题未解决，已转人工 | 满意度=0.30", mode: "danger" },
+          { agent: "MemoryScribe", title: "记忆沉淀", detail: "已生成对话摘要和知识库更新建议" }
         ]
       }
     };
@@ -560,8 +600,10 @@
     function matchScenario(text) {
       if (/订单|物流|快递|到哪/.test(text)) return "order";
       if (/地址|收货/.test(text)) return "address";
-      if (/退款|退货|退钱/.test(text)) return "refund";
+      if (/退货|换货|退回/.test(text)) return "return";
+      if (/退款|退钱/.test(text)) return "refund";
       if (/投诉|客服太差|态度|举报/.test(text)) return "complaint";
+      if (/天气|你好|你是谁|其他/.test(text)) return "unknown";
       return null;
     }
 

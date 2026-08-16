@@ -59,7 +59,7 @@ class IntentClassifier(BaseSkill):
             "refund": ["退款", "退钱", "退我钱", "款项", "不想要了", "退掉"],
             "address_change": ["地址", "改地址", "收货地址", "换地址"],
             "complaint": ["投诉", "差评", "垃圾", "骗子", "举报"],
-            "product_consult": ["怎么用", "说明书", "功能", "参数", "规格"],
+            "product_consult": ["怎么用", "怎么使用", "如何使用", "说明书", "功能", "参数", "规格"],
             "logistics_query": ["物流", "快递", "发货", "到哪了", "运输"],
             "return": ["退货", "退换", "换货", "退回"],
             "invoice": ["发票", "开票", "税号"],
@@ -244,6 +244,8 @@ class ProductDocRAG(BaseSkill):
         for doc in mock_docs:
             hits = sum(1 for kw in doc["keywords"] if kw in query)
             overlap = len(query_words & set(doc["keywords"]))
+            if hits == 0 and overlap == 0:
+                continue
             score = min(0.5 + hits * 0.2 + overlap * 0.1, 0.95)
             scored.append({"doc": doc["doc"], "source": doc["source"], "score": round(score, 3)})
         scored.sort(key=lambda x: x["score"], reverse=True)
@@ -272,6 +274,8 @@ class HistoryCaseSearch(BaseSkill):
         scored = []
         for case in mock_cases:
             hits = sum(1 for kw in case["keywords"] if kw in query)
+            if hits == 0:
+                continue
             score = min(0.35 + hits * 0.3, 0.95)
             scored.append({
                 "case_id": case["case_id"],

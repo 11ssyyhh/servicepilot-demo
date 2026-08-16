@@ -23,15 +23,16 @@ ServicePilot 基于 AgentTeams Manager-Workers 架构，用 7 个职能 Agent �
 - **可插拔 LLM**：默认零依赖规则引擎，配置 `SERVICE_PILOT_LLM_API_KEY` 即切 OpenAI 兼容接口
 - **评估回归**：Golden/Badcase 数据集 + `evaluate.py`，输出准确率与成本指标
 - **人工审批台**：`approval_server.py` + 交互式 Web UI，通过/拒绝写入审计
+- **审批后自动续跑**：`resume_approval.py` 将审批决策写回状态，从 ToolExecutor 继续闭环
 - **数据合规**：手机号、邮箱、地址在证据文件中自动脱敏
 
 ## 🚀 快速开始
 
 ```bash
-# 1. 运行 5 个场景闭环，生成 output/ 证据
+# 1. 运行 7 个场景闭环，生成 output/ 证据
 python main.py 1
 
-# 2. 运行 26 项测试
+# 2. 运行 28 项测试
 python -m unittest discover -s tests -t . -v
 
 # 3. 运行评估
@@ -43,10 +44,13 @@ python replay.py
 # 5. 人工审批台（浏览器打开 http://127.0.0.1:8080/approval.html）
 python approval_server.py 8080
 
-# 6. MCP 等价 Mock Server
+# 6. 审批后自动续跑（读取审批台产生的 approval_decisions.json）
+python resume_approval.py
+
+# 7. MCP 等价 Mock Server
 python mcp_mock_server.py 8001
 
-# 7. Docker 一键演示
+# 8. Docker 一键演示
 docker compose up --build
 ```
 
@@ -61,12 +65,14 @@ docker compose up --build
 | 退款申请 | refund | L2 | 审批拒绝 → 转人工工单 |
 | 修改地址 | address_change | L1 | 执行失败 → 转人工工单 |
 | 用户投诉 | complaint | high | 创建高优先级工单并安抚 |
+| 退货咨询 | return | L0 | RAG 知识库自动回复 |
+| 未知问题 | other | low | 低置信度 → 自动转人工工单 |
 
 ## 📁 项目结构
 
 ```text
 servicepilot-demo/
-├── main.py                  # Demo 入口（5 场景）
+├── main.py                  # Demo 入口（7 场景）
 ├── manager.py               # AgentTeams Manager 编排器
 ├── agents.py                # 7 个职能 Agent
 ├── skills.py                # 17 个 Skill
@@ -79,10 +85,11 @@ servicepilot-demo/
 ├── eval_dataset.json        # 评估数据集
 ├── replay.py                # 全链路回放
 ├── approval_server.py       # 人工审批服务
+├── resume_approval.py       # 审批决策后自动续跑
 ├── mcp_mock_server.py       # MCP 等价 Mock Server
 ├── agentteams/              # AgentTeams 部署配置
-├── docs/                    # 提交文档 + 在线 Demo + 审批台
-├── tests/                   # 26 项测试
+├── docs/                    # 提交文档 + 在线 Demo + 审批台 + 作品说明 PDF
+├── tests/                   # 28 项测试
 └── .github/workflows/ci.yml # CI
 ```
 
@@ -109,6 +116,8 @@ servicepilot-demo/
 - [开放开源计划](docs/06-开放开源计划.md)
 - [初赛检查清单](docs/07-初赛检查清单.md)
 - [AgentTeams 映射说明](docs/08-AgentTeams映射说明.md)
+- [评审演示脚本](docs/09-演示脚本.md)
+- [初赛作品说明](docs/初赛作品说明.pdf)
 - [人工审批台](docs/approval.html)
 
 ## 📈 量化目标
@@ -117,7 +126,7 @@ servicepilot-demo/
 - 平均响应时间：3 分钟 → 30 秒
 - 客服人力成本：降低 40%
 - 关键操作审计：100% 留痕
-- 评估通过率：Golden Case 100%（当前 6/6）
+- 评估通过率：Golden Case 100%（当前 12/12）
 
 ## 🔄 复赛计划
 
@@ -127,6 +136,7 @@ servicepilot-demo/
 - [ ] 扩充客服对话评估数据集
 - [ ] 接入 AgentLoop 可观测看板
 - [ ] 完善安全执行白名单和回滚机制
+- [ ] 人工审批决策联动真实工单系统与消息通知
 
 ## 📄 开源计划
 

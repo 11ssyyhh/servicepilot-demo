@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServicePilot 初赛作品说明</title>
+  <style>
+    :root {
+      --ink: #14242f;
+      --muted: #5b6c7d;
+      --line: #dbe4ea;
+      --paper: #f7fafb;
+      --teal: #0f766e;
+      --teal-soft: #d9f0ec;
+      --blue: #0e7490;
+      --orange: #b45309;
+      --orange-soft: #fdeeda;
+      --red: #b42318;
+      --red-soft: #fde8e4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      background: #e8eef1;
+      color: var(--ink);
+    }
+    .slide {
+      width: 1280px;
+      height: 720px;
+      margin: 0 auto;
+      background: var(--paper);
+      position: relative;
+      overflow: hidden;
+      padding: 64px 84px 56px;
+      page-break-after: always;
+    }
+    .slide:last-child { page-break-after: auto; }
+    .slide::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 8px;
+      background: linear-gradient(90deg, #14b8a6 0%, #0ea5e9 55%, #f59e0b 100%);
+    }
+    .kicker {
+      display: inline-block;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      color: var(--teal);
+      background: var(--teal-soft);
+      border-radius: 999px;
+      padding: 6px 14px;
+      margin-bottom: 18px;
+    }
+    h1 { font-size: 46px; line-height: 1.15; letter-spacing: 0; }
+    h2 { font-size: 30px; line-height: 1.2; letter-spacing: 0; margin-bottom: 20px; }
+    .sub { color: var(--muted); font-size: 18px; line-height: 1.6; }
+    .grid { display: grid; gap: 16px; }
+    .grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px 22px;
+    }
+    .card .num { font-size: 34px; font-weight: 800; color: var(--teal); }
+    .card h3 { font-size: 18px; margin: 6px 0 8px; }
+    .card p { font-size: 14px; color: var(--muted); line-height: 1.55; }
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      margin-top: 26px;
+    }
+    .flow .step {
+      flex: 1;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--teal);
+      border-radius: 8px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .flow .step.warn { border-top-color: var(--orange); }
+    .flow .step.danger { border-top-color: var(--red); }
+    .flow .step .no { font-size: 12px; color: var(--muted); }
+    .flow .step .name { font-weight: 700; font-size: 14px; margin-top: 6px; }
+    .flow .step .role { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .legend { margin-top: 20px; font-size: 13px; color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 15px;
+    }
+    th, td { border: 1px solid var(--line); padding: 12px 14px; text-align: left; vertical-align: top; }
+    th { background: #eef4f6; font-size: 14px; }
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .pill.teal { background: var(--teal-soft); color: var(--teal); }
+    .pill.orange { background: var(--orange-soft); color: var(--orange); }
+    .pill.red { background: var(--red-soft); color: var(--red); }
+    .metric {
+      text-align: center;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px 12px;
+    }
+    .metric .value { font-size: 40px; font-weight: 800; color: var(--teal); }
+    .metric .label { font-size: 14px; color: var(--muted); margin-top: 8px; }
+    .foot {
+      position: absolute;
+      left: 84px;
+      right: 84px;
+      bottom: 26px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+    .foot .repo { color: var(--teal); font-weight: 700; }
+    .links { margin-top: 28px; display: flex; flex-direction: column; gap: 10px; font-size: 16px; }
+    .links a { color: var(--blue); text-decoration: none; }
+    .arch {
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      gap: 22px;
+      margin-top: 26px;
+    }
+    .manager {
+      background: #103c46;
+      color: #eefbf9;
+      border-radius: 8px;
+      padding: 24px 18px;
+      text-align: center;
+    }
+    .manager .title { font-size: 20px; font-weight: 800; }
+    .manager .sub { color: #a9d8d2; font-size: 13px; margin-top: 6px; }
+    .workers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .worker {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--teal);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+    .worker b { display: block; margin-bottom: 4px; }
+    .worker span { color: var(--muted); font-size: 12px; }
+    .quote {
+      font-size: 22px;
+      line-height: 1.7;
+      max-width: 920px;
+      margin-top: 30px;
+    }
+    .code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #101c22;
+      color: #d7f6ef;
+      border-radius: 8px;
+      padding: 18px 22px;
+      font-size: 15px;
+      line-height: 1.7;
+      margin-top: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <section class="slide">
+    <div class="kicker">GOAI 世界人工智能开源大赛 · Agent Infra · 方向 2 智能客服自主闭环</div>
+    <h1>ServicePilot</h1>
+    <h2 style="margin-top:10px; color:var(--teal);">智能客服多 Agent 自主闭环系统</h2>
+    <p class="sub" style="margin-top:18px;">
+      基于 AgentTeams Manager-Workers 架构，7 个职能 Agent、17 个可复用 Skill 与 MCP 等价工具契约，
+      完成进线、意图识别、RAG 检索、任务规划、工具执行、质量审核、效果验证、记忆沉淀的全链路自主闭环。
+    </p>
+    <div class="grid cols-3" style="margin-top:44px;">
+      <div class="metric"><div class="value">7</div><div class="label">职能 Agent</div></div>
+      <div class="metric"><div class="value">17</div><div class="label">可复用 Skill</div></div>
+      <div class="metric"><div class="value">L0-L3</div><div class="label">风险分级管控</div></div>
+    </div>
+    <div class="foot">
+      <span>初赛作品 · 2026 年 8 月</span>
+      <span class="repo">github.com/11ssyyhh/servicepilot-demo</span>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="kicker">业务痛点</span>
+    <h2>传统客服为什么做不成“自主闭环”</h2>
+    <div class="grid cols-2">
+      <div class="card">
+        <div class="num">01</div>
+        <h3>单 Bot 能力边界有限</h3>
+        <p>复杂问题需要识别意图、查知识、调业务系统、校验结果，单一机器人无法可靠编排，长链路容易中断。</p>
+      </div>
+      <div class="card">
+        <div class="num">02</div>
+        <h3>高风险操作依赖人工</h3>
+        <p>退款、销户等高风险动作没有明确的审批门禁、幂等与回滚机制，自动化落地阻力大。</p>
+      </div>
+      <div class="card">
+        <div class="num">03</div>
+        <h3>过程不可追溯</h3>
+        <p>客服处理过程缺少 Trace、日志、指标与审计记录，出问题后难以回放定位。</p>
+      </div>
+      <div class="card">
+        <div class="num">04</div>
+        <h3>经验难沉淀复用</h3>
+        <p>优秀客服话术、业务规则与历史案例散落，无法转化为可评估、可迭代的 Agent 资产。</p>
+      </div>
+    </div>
+    <div class="foot"><span>痛点</span><span>ServicePilot 用 Agent Infra 方式把客服流程工程化</span></div>
+  </section>
+
+  <section class="slide">
+    <span class="kicker">方案总览</span>
+    <h2>Manager-Workers：一个可编排、可治理的客服 Agent 团队</h2>
+    <div class="arch">
+      <div class="manager">
+        <div class="title">Manager</div>
+        <div class="sub">任务拆解 · 调度 · 状态追踪 · 异常处理</div>
+      </div>
+      <div class="workers">
+        <div class="worker"><b>IntentRouter</b><span>意图 / 情绪 / 紧急度</span></div>
+        <div class="worker"><b>KnowledgeRetriever</b><span>FAQ / 文档 / 历史案例 RAG</span></div>
+        <div class="worker"><b>TaskPlanner</b><span>多步规划 / 风险预判</span></div>
+        <div class="worker"><b>ToolExecutor</b><span>MCP 工具 / 幂等 / 审批门禁</span></div>
+        <div class="worker"><b>QualityGuard</b><span>合规 / 敏感词 / 输出拦截</span></div>
+        <div class="worker"><b>Verifier</b><span>效果验证 / 转人工</span></div>
+        <div class="worker"><b>MemoryScribe</b><span>摘要 / 知识沉淀 / 服务报告</span></div>
+        <div class="worker"><b>Skill 层</b><span>诊断 / 知识 / 执行 / 治理 / 沉淀</span></div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:26px;">共享状态统一传递上下文，7 个 Worker 只负责自己的决策边界，Manager 负责编排与异常兜底。</p>
+    <div class="foot"><span>方案总览</span><span>AgentTeams 能力映射见 docs/08</span></div>
+  </section>
+
+  <section class="slide">
+    <span class="kicker">自主闭环</span>
+    <h2>一次客服请求的完整生命周期</h2>
+    <div class="flow">
+      <div class="step"><div class="no">01</div><div class="name">进线</div><div class="role">用户消息接入</div></div>
+      <div class="step"><div class="no">02</div><div class="name">意图识别</div><div class="role">IntentRouter</div></div>
+      <div class="step"><div class="no">03</div><div class="name">RAG 检索</div><div class="role">知识 / 文档 / 案例</div></div>
+      <div class="step"><div class="no">04</div><div class="name">任务规划</div><div class="role">TaskPlanner</div></div>
+      <div class="step warn"><div class="no">05</div><div class="name">工具执行</div><div class="role">L0-L3 门禁</div></div>
+      <div class="step"><div class="no">06</div><div class="name">质量审核</div><div class="role">QualityGuard</div></div>
+      <div class="step"><div class="no">07</div><div class="name">效果验证</div><div class="role">Verifier</div></div>
+      <div class="step"><div class="no">08</div><div class="name">记忆沉淀</div><div class="role">MemoryScribe</div></div>
+    </div>
+    <div class="grid cols-3" style="margin-top:34px;">
+      <div class="card"><h3>低置信度</h3><p>RAG 置信度低于阈值自动转人工并创建工单。</p></div>
+      <div class="card"><h3>高风险动作</h3><p>L2 及以上必须审批，审批通过才允许执行。</p></div>
+      <div class="card"><h3>全链路证据</h3><p>每一步都产生 Trace / Log / Metrics，可回放。</p></div>
+    </div>
+    <div class="foot"><span>自主闭环</span><span>运行 7 个场景：python main.py 1</span></div>
+  </section>
+
+  <section class="slide">
+    <span class="kicker">安全与治理</span>
+    <h2>L0-L3 风险管控 + 人工审批 + 幂等回滚</h2>
+    <table>
+      <tr><th>等级</th><th>含义</th><th>示例</th><th>机制</th></tr>
+      <tr><td><span class="pill teal">L0</span></td><td>只读诊断</td><td>订单查询</td><td>自动执行</td></tr>
+      <tr><td><span class="pill teal">L1</span></td><td>低风险自动</td><td>地址修改</td><td>自动执行 + 留痕，失败转人工</td></tr>
+      <tr><td><span class="pill orange">L2</span></td><td>灰度 + 审批</td><td>退款处理</td><td>人工审批通过后幂等执行，可回滚</td></tr>
+      <tr><td><span class="pill red">L3</span></td><td>极端风险</td><td>销户 / 大额转账</td><td>仅生成方案，不执行</td></tr>
+    </table>
+    <div class="grid cols-3" style="margin-top:26px;">
+      <div class="card"><h3>审批双路径</h3><p>通过后自动续跑执行退款；拒绝后转人工工单，两条路径均可审计。</p></div>
+      <div class="card"><h3>幂等键</h3><p>写操作携带 idempotency_key，重复提交返回同一结果。</p></div>
+      <div class="card"><h3>回滚点</h3><p>退款前保存订单状态，RollbackOperation 可恢复。</p></div>
+    </div>
+    <div class="foot"><span>安全与治理</span><span>审批台：approval.html + approval_server.py</span></div>
+  </section>
+
+  <section class="slide">
+    <span class="kicker">可观测与审计</span>
+    <h2>Trace / Log / Metrics / Session / Summary</h2>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>全链路 Span</h3>
+        <p>Agent、Skill、MCP 工具、LLM、RAG、审批事件统一写入 trace.jsonl，每个会话有独立 trace_id。</p>
+      </div>
+      <div class="card">
+        <h3>结构化日志</h3>
+        <p>意图路由、失败原因、审批请求、审计事件均以结构化 JSON 记录，便于检索。</p>
+      </div>
+      <div class="card">
+        <h3>聚合指标</h3>
+        <p>会话数、工具成功率、LLM Token、成本、端到端延迟写入 metrics.json。</p>
+      </div>
+      <div class="card">
+        <h3>回放与脱敏</h3>
+        <p>replay.py 从输入还原到满意度；session 快照自动对手机号、邮箱、地址脱敏。</p>
+      </div>
+    </div>
+    <div class="code">python main.py 1<br>python evaluate.py<br>python replay.py<br>python resume_approval.py</div>
+    <div class="foot"><span>可观测与审计</span><span>证据样例：docs/evidence/</span></div>
+  </section>
+
+  <section class="slide">
+    <span class="kicker">效果与证据</span>
+    <h2>可运行、可评估、可验证</h2>
+    <div class="grid cols-4">
+      <div class="metric"><div class="value">7</div><div class="label">演示场景闭环</div></div>
+      <div class="metric"><div class="value">12/12</div><div class="label">评估通过率 100%</div></div>
+      <div class="metric"><div class="value">28</div><div class="label">自动化测试通过</div></div>
+      <div class="metric"><div class="value">110ms</div><div class="label">端到端平均延迟</div></div>
+    </div>
+    <div class="grid cols-2" style="margin-top:30px;">
+      <div class="card"><h3>场景覆盖</h3><p>订单查询、退款审批通过、退款审批拒绝、地址修改失败、投诉、退货咨询、未知问题转人工。</p></div>
+      <div class="card"><h3>评估口径</h3><p>意图准确率 100%、闭环解决准确率 100%、工具成功率 91%，Golden / Badcase 数据驱动回归。</p></div>
+    </div>
+    <div class="foot"><span>效果与证据</span><span>在线 Demo：11ssyyhh.github.io/servicepilot-demo/</span></div>
+  </section>
+
+  <section class="slide">
+    <span class="kicker">AgentTeams 映射</span>
+    <h2>不是“演示了一个机器人”，而是“可落地的一套 Agent 基础设施”</h2>
+    <table>
+      <tr><th>AgentTeams 能力</th><th>ServicePilot 落地机制</th></tr>
+      <tr><td>角色编排</td><td>Manager + 7 Worker，Agent Identity 与决策边界清晰</td></tr>
+      <tr><td>任务拆解与上下文传递</td><td>SharedState 状态机 + task_plan + trace_id 全链路关联</td></tr>
+      <tr><td>协同执行</td><td>串行编排 + 审批门禁 + 幂等执行 + 回滚补偿</td></tr>
+      <tr><td>工具集成</td><td>MCP 等价契约：订单 / 工单 / 支付 / 物流，7 个工具 Schema</td></tr>
+      <tr><td>状态追踪</td><td>Trace / Log / Metrics / Session / Summary，支持回放</td></tr>
+    </table>
+    <p class="sub" style="margin-top:26px;">agentteams/ 目录提供 team.yaml 与 workers.yaml 部署配置，初赛用 Mock 系统验证契约，复赛可平移至真实平台。</p>
+    <div class="foot"><span>AgentTeams 映射</span><span>详见 docs/08-AgentTeams映射说明.md</span></div>
+  </section>
+
+  <section class="slide">
+    <span class="kicker">开放与落地</span>
+    <h2>开源范围与复赛计划</h2>
+    <div class="grid cols-2">
+      <div class="card"><h3>初赛已交付</h3><p>7 Agent、17 Skill、MCP Mock Server、评估数据集、AgentTeams 部署配置、Docker 与 CI，MIT License 开源。</p></div>
+      <div class="card"><h3>复赛冲刺</h3><p>接入真实 AgentTeams 平台与业务 API，接入通义千问 LLM，扩充客服数据集，接入 AgentLoop 可观测看板。</p></div>
+    </div>
+    <div class="links">
+      <a href="https://11ssyyhh.github.io/servicepilot-demo/" target="_blank">在线 Demo：https://11ssyyhh.github.io/servicepilot-demo/</a>
+      <a href="https://github.com/11ssyyhh/servicepilot-demo" target="_blank">代码仓库：https://github.com/11ssyyhh/servicepilot-demo</a>
+    </div>
+    <div class="quote">让智能客服从“人工经验”走向可治理、可复用、可审计的 Agent Infra。</div>
+    <div class="foot"><span>谢谢观看</span><span>ServicePilot · GOAI Agent Infra 方向 2</span></div>
+  </section>
+
+</body>
+</html>

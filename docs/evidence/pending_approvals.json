@@ -1,10 +1,10 @@
 [
   {
-    "id": "454c3d76",
+    "id": "4d4a75e8",
     "action": "process_refund",
     "reason": "执行退款(审批通过后) 属于高风险操作，需要人工审批",
     "risk_level": "L2",
-    "idempotency_key": "idem-process_refund-75022cee",
+    "idempotency_key": "idem-process_refund-71bab228",
     "evidence": [
       {
         "step": 4,
@@ -14,6 +14,6 @@
       }
     ],
     "status": "pending",
-    "timestamp": 1786894135.4588268
+    "timestamp": 1786894967.8590128
   }
 ]

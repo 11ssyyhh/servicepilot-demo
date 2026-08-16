@@ -40,5 +40,47 @@
     "expected_intent": "logistics_query",
     "expected_resolved": true,
     "auto_approve": true
+  },
+  {
+    "id": "return_ok",
+    "input": "我要申请退货，流程是什么？",
+    "expected_intent": "return",
+    "expected_resolved": true,
+    "auto_approve": true
+  },
+  {
+    "id": "invoice_ok",
+    "input": "订单ORD20260816001的发票怎么开？",
+    "expected_intent": "invoice",
+    "expected_resolved": true,
+    "auto_approve": true
+  },
+  {
+    "id": "account_ok",
+    "input": "账号登录不上怎么办？",
+    "expected_intent": "account",
+    "expected_resolved": true,
+    "auto_approve": true
+  },
+  {
+    "id": "product_consult_ok",
+    "input": "这款蓝牙耳机怎么使用？",
+    "expected_intent": "product_consult",
+    "expected_resolved": true,
+    "auto_approve": true
+  },
+  {
+    "id": "logistics_delivery_ok",
+    "input": "发货后多久能到？",
+    "expected_intent": "logistics_query",
+    "expected_resolved": true,
+    "auto_approve": true
+  },
+  {
+    "id": "unknown_badcase",
+    "input": "今天天气怎么样？",
+    "expected_intent": "other",
+    "expected_resolved": false,
+    "auto_approve": true
   }
 ]

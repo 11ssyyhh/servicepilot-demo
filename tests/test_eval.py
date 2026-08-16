@@ -23,7 +23,7 @@ class EvalTest(unittest.TestCase):
         report_path = ROOT / "output" / "eval_report.json"
         self.assertTrue(report_path.exists())
         data = json.loads(report_path.read_text(encoding="utf-8"))
-        self.assertEqual(len(data["cases"]), 6)
+        self.assertEqual(len(data["cases"]), 12)
 
 
 if __name__ == "__main__":

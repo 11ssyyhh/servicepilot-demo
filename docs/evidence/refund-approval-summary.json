@@ -1,6 +1,6 @@
 {
-  "trace_id": "a0bbe4fb-333",
-  "session_id": "57acd78a",
+  "trace_id": "20786732-636",
+  "session_id": "ac969b77",
   "intent": "refund",
   "risk_level": "L2",
   "issue_resolved": true,
@@ -8,11 +8,11 @@
   "retrieval_confidence": 0.9,
   "approvals": [
     {
-      "id": "e4c0d176",
+      "id": "8f7f1d86",
       "action": "process_refund",
       "reason": "自动演示审批：风险等级L2，操作在白名单内，证据完整",
       "risk_level": "L2",
-      "idempotency_key": "idem-process_refund-16aab2f6",
+      "idempotency_key": "idem-process_refund-d9494f16",
       "evidence": [
         {
           "step": 4,
@@ -22,7 +22,7 @@
         }
       ],
       "status": "approved",
-      "timestamp": 1786894135.1475186,
+      "timestamp": 1786894967.5480456,
       "approver": "demo_admin",
       "approved": true
     }
@@ -35,7 +35,7 @@
       "risk_level": "L0",
       "idempotency_key": null,
       "rollback_point": null,
-      "duration_ms": 101.35
+      "duration_ms": 100.44
     },
     {
       "skill": "RiskEscalation",
@@ -49,12 +49,12 @@
       "skill": "RefundProcess",
       "success": true,
       "risk_level": "L2",
-      "idempotency_key": "idem-process_refund-16aab2f6",
+      "idempotency_key": "idem-process_refund-d9494f16",
       "rollback_point": {
         "order_id": "ORD20260816001",
         "previous_status": "shipped"
       },
-      "duration_ms": 200.34
+      "duration_ms": 200.5
     }
   ],
   "metrics": {
@@ -73,6 +73,6 @@
     "rag_retrievals": 1.0,
     "total_tokens": 193,
     "total_cost_usd": 0.0,
-    "e2e_latency_ms": 301.69
+    "e2e_latency_ms": 301.94
   }
 }

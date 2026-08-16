@@ -56,9 +56,7 @@ class AgentTeamsManager:
         state.add_message("user", user_message)
         self.observability.mark_conversation()
 
-        for agent in self.agents.values():
-            agent.tracer = self.observability
-            agent.llm = self.llm_client
+        self._configure_agents()
 
         if self.debug:
             print(f"\n{'='*60}")
@@ -66,7 +64,46 @@ class AgentTeamsManager:
             print(f"👤 用户: {user_message}")
             print(f"{'='*60}")
 
-        for agent_name in self.pipeline:
+        state = self._run_pipeline(state, start_index=0)
+        self.observability.finalize()
+        if self.debug:
+            self._print_final_report(state)
+        return self._finish(state, write_evidence)
+
+    def resume(self, state: SharedState, start_at: str = "ToolExecutor",
+               write_evidence: bool = True) -> SharedState:
+        """
+        从指定 Agent 继续运行，用于人工审批决策后的自主续跑。
+        """
+        self.observability = Observability(trace_id=state.trace_id or None,
+                                           output_dir=self.output_dir)
+        if not state.trace_id:
+            state.trace_id = self.observability.trace_id
+        self.observability.mark_conversation()
+        self.observability.add_log("info", "session.resumed",
+                                   start_at=start_at, session_id=state.session_id)
+        self._configure_agents()
+
+        if self.debug:
+            print(f"\n{'='*60}")
+            print(f"🚀 ServicePilot 会话续跑 | Session: {state.session_id} | Trace: {state.trace_id}")
+            print(f"  从 {start_at} 继续执行，审批决策已生效")
+            print(f"{'='*60}")
+
+        start_index = self.pipeline.index(start_at)
+        state = self._run_pipeline(state, start_index=start_index)
+        self.observability.finalize()
+        if self.debug:
+            self._print_final_report(state)
+        return self._finish(state, write_evidence)
+
+    def _configure_agents(self) -> None:
+        for agent in self.agents.values():
+            agent.tracer = self.observability
+            agent.llm = self.llm_client
+
+    def _run_pipeline(self, state: SharedState, start_index: int = 0) -> SharedState:
+        for agent_name in self.pipeline[start_index:]:
             agent = self.agents[agent_name]
             span = self.observability.start_span(agent_name, "agent", {"role": agent.role})
 
@@ -87,17 +124,21 @@ class AgentTeamsManager:
                 state.add_message("system", f"Agent {agent_name} 异常，转人工处理")
                 state.needs_human = True
                 break
+        return state
 
-        self.observability.finalize()
-        if self.debug:
-            self._print_final_report(state)
-
+    def _finish(self, state: SharedState, write_evidence: bool) -> SharedState:
         if write_evidence:
             self.evidence = self.observability.write_evidence(state)
             if state.pending_approvals:
                 pending_path = self.output_dir / "pending_approvals.json"
                 pending_path.write_text(
                     json.dumps(state.pending_approvals, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                # 保留未脱敏的续跑快照，供人工审批后续跑使用（output/ 不入库）
+                resume_path = self.output_dir / "resume_state.json"
+                resume_path.write_text(
+                    json.dumps(state.to_dict(full=True), ensure_ascii=False, indent=2),
                     encoding="utf-8",
                 )
         return state

@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT / "output"
 PENDING_FILE = OUTPUT_DIR / "pending_approvals.json"
 DECISIONS_FILE = OUTPUT_DIR / "approval_decisions.json"
+AUDIT_FILE = OUTPUT_DIR / "approval_audit.jsonl"
 UI_FILE = ROOT / "docs" / "approval.html"
 
 SAMPLE_APPROVALS = [
@@ -58,6 +59,15 @@ def record_decision(approval: Dict) -> None:
         decisions = json.loads(DECISIONS_FILE.read_text(encoding="utf-8"))
     decisions.append(approval)
     DECISIONS_FILE.write_text(json.dumps(decisions, ensure_ascii=False, indent=2), encoding="utf-8")
+    with AUDIT_FILE.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "approval_id": approval.get("id"),
+            "action": approval.get("action"),
+            "approved": approval.get("approved"),
+            "approver": approval.get("approver"),
+            "reason": approval.get("reason"),
+        }, ensure_ascii=False) + "\n")
 
 
 class ApprovalHandler(BaseHTTPRequestHandler):
@@ -100,6 +110,13 @@ class ApprovalHandler(BaseHTTPRequestHandler):
             if DECISIONS_FILE.exists():
                 decisions = json.loads(DECISIONS_FILE.read_text(encoding="utf-8"))
             self._send(200, {"decisions": decisions})
+            return
+        if path == "/api/health":
+            self._send(200, {
+                "status": "ok",
+                "service": "approval-server",
+                "pending": len(load_pending()),
+            })
             return
         self._send(404, {"error": "not found"})
 

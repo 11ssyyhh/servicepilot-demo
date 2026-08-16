@@ -1,24 +1,32 @@
 {
-  "session_id": "57acd78a",
-  "trace_id": "a0bbe4fb-333",
+  "session_id": "ac969b77",
+  "user_id": "anonymous",
+  "trace_id": "20786732-636",
+  "auto_approve": true,
+  "approver": "demo_admin",
   "intent": "refund",
   "sentiment": 0.5,
   "urgency": "normal",
   "risk_level": "L2",
+  "retrieval_confidence": 0.9,
+  "quality_check_passed": true,
+  "quality_issues": [],
   "issue_resolved": true,
   "satisfaction": 0.85,
-  "retrieval_confidence": 0.9,
   "message_count": 18,
   "execution_count": 3,
   "summary": "用户咨询1次，主要问题：我要退款，订单ORD20260816001不想要了",
-  "final_reply": "您好，您的退款申请已提交，退款单号RF0D0EFEC9，预计1-3个工作日原路返回原路返回。",
+  "knowledge_update_suggestions": [
+    "建议将该案例沉淀为历史相似案例，供后续检索复用"
+  ],
+  "final_reply": "您好，您的退款申请已提交，退款***RFED9C8DB8，预计1-3个工***返回。",
   "approval_history": [
     {
-      "id": "e4c0d176",
+      "id": "8f7f1d86",
       "action": "process_refund",
       "reason": "自动演示审批：风险等级L2，操作在白名单内，证据完整",
       "risk_level": "L2",
-      "idempotency_key": "idem-process_refund-16aab2f6",
+      "idempotency_key": "idem-process_refund-d9494f16",
       "evidence": [
         {
           "step": 4,
@@ -28,7 +36,7 @@
         }
       ],
       "status": "approved",
-      "timestamp": 1786894135.1475186,
+      "timestamp": 1786894967.5480456,
       "approver": "demo_admin",
       "approved": true
     }
@@ -36,8 +44,8 @@
   "pending_approvals": [],
   "audit_events": [
     {
-      "trace_id": "a0bbe4fb-333",
-      "timestamp": 1786894135.0461698,
+      "trace_id": "20786732-636",
+      "timestamp": 1786894967.4466064,
       "event": "intent.routed",
       "actor": "IntentRouter",
       "details": {
@@ -47,8 +55,8 @@
       }
     },
     {
-      "trace_id": "a0bbe4fb-333",
-      "timestamp": 1786894135.1475186,
+      "trace_id": "20786732-636",
+      "timestamp": 1786894967.5480456,
       "event": "tool.executed",
       "actor": "ToolExecutor",
       "details": {
@@ -60,8 +68,8 @@
       }
     },
     {
-      "trace_id": "a0bbe4fb-333",
-      "timestamp": 1786894135.1475186,
+      "trace_id": "20786732-636",
+      "timestamp": 1786894967.5480456,
       "event": "tool.executed",
       "actor": "ToolExecutor",
       "details": {
@@ -73,34 +81,34 @@
       }
     },
     {
-      "trace_id": "a0bbe4fb-333",
-      "timestamp": 1786894135.1475186,
+      "trace_id": "20786732-636",
+      "timestamp": 1786894967.5480456,
       "event": "approval.decided",
       "actor": "demo_admin",
       "details": {
-        "approval_id": "e4c0d176",
+        "approval_id": "8f7f1d86",
         "action": "process_refund",
         "approved": true,
         "reason": "自动演示审批：风险等级L2，操作在白名单内，证据完整",
-        "idempotency_key": "idem-process_refund-16aab2f6"
+        "idempotency_key": "idem-process_refund-d9494f16"
       }
     },
     {
-      "trace_id": "a0bbe4fb-333",
-      "timestamp": 1786894135.3478603,
+      "trace_id": "20786732-636",
+      "timestamp": 1786894967.7485502,
       "event": "tool.executed",
       "actor": "ToolExecutor",
       "details": {
         "skill": "RefundProcess",
         "success": true,
         "risk_level": "L2",
-        "idempotency_key": "idem-process_refund-16aab2f6",
+        "idempotency_key": "idem-process_refund-d9494f16",
         "error": null
       }
     },
     {
-      "trace_id": "a0bbe4fb-333",
-      "timestamp": 1786894135.3478603,
+      "trace_id": "20786732-636",
+      "timestamp": 1786894967.7485502,
       "event": "quality.checked",
       "actor": "QualityGuard",
       "details": {
@@ -109,8 +117,8 @@
       }
     },
     {
-      "trace_id": "a0bbe4fb-333",
-      "timestamp": 1786894135.3478603,
+      "trace_id": "20786732-636",
+      "timestamp": 1786894967.7485502,
       "event": "verification.checked",
       "actor": "Verifier",
       "details": {
@@ -127,8 +135,8 @@
         "order_id": "ORD20260816001",
         "previous_status": "shipped"
       },
-      "idempotency_key": "idem-process_refund-16aab2f6",
-      "timestamp": 1786894135.3478603
+      "idempotency_key": "idem-process_refund-d9494f16",
+      "timestamp": 1786894967.7485502
     }
   ],
   "needs_human": false,
@@ -137,109 +145,353 @@
       "role": "user",
       "agent": null,
       "content": "我要退款，订单ORD20260816001不想要了",
-      "timestamp": 1786894135.0461698
+      "timestamp": 1786894967.4466064
     },
     {
       "role": "agent",
       "agent": "IntentRouter",
       "content": "收到用户消息: 我要退款，订单ORD20260816001不想要了...",
-      "timestamp": 1786894135.0461698
+      "timestamp": 1786894967.4466064
     },
     {
       "role": "agent",
       "agent": "IntentRouter",
       "content": "意图=refund, 情绪=0.50, 紧急度=normal",
-      "timestamp": 1786894135.0461698
+      "timestamp": 1786894967.4466064
     },
     {
       "role": "agent",
       "agent": "KnowledgeRetriever",
       "content": "开始检索知识库，意图=refund",
-      "timestamp": 1786894135.0461698
+      "timestamp": 1786894967.4466064
     },
     {
       "role": "agent",
       "agent": "KnowledgeRetriever",
-      "content": "检索到7条结果，置信度=0.90",
-      "timestamp": 1786894135.0461698
+      "content": "检索到4条结果，置信度=0.90",
+      "timestamp": 1786894967.4466064
     },
     {
       "role": "agent",
       "agent": "TaskPlanner",
       "content": "开始任务规划，意图=refund",
-      "timestamp": 1786894135.0461698
+      "timestamp": 1786894967.4466064
     },
     {
       "role": "agent",
       "agent": "TaskPlanner",
       "content": "规划4步执行，整体风险=L2",
-      "timestamp": 1786894135.0461698
+      "timestamp": 1786894967.4476051
     },
     {
       "role": "agent",
       "agent": "ToolExecutor",
       "content": "开始执行任务计划，共4步",
-      "timestamp": 1786894135.0461698
+      "timestamp": 1786894967.4476051
     },
     {
       "role": "agent",
       "agent": "ToolExecutor",
       "content": "执行步骤1: 查询订单确认退款资格",
-      "timestamp": 1786894135.0461698
+      "timestamp": 1786894967.4476051
     },
     {
       "role": "agent",
       "agent": "ToolExecutor",
       "content": "执行步骤2: 评估退款风险(L2，需审批)",
-      "timestamp": 1786894135.1475186
+      "timestamp": 1786894967.5480456
     },
     {
       "role": "agent",
       "agent": "ToolExecutor",
       "content": "执行步骤4: 执行退款(审批通过后)",
-      "timestamp": 1786894135.1475186
+      "timestamp": 1786894967.5480456
     },
     {
       "role": "agent",
       "agent": "QualityGuard",
       "content": "开始质量审核",
-      "timestamp": 1786894135.3478603
+      "timestamp": 1786894967.7485502
     },
     {
       "role": "agent",
       "agent": "QualityGuard",
       "content": "✅ 质量审核通过",
-      "timestamp": 1786894135.3478603
+      "timestamp": 1786894967.7485502
     },
     {
       "role": "agent",
       "agent": "QualityGuard",
-      "content": "您好，您的退款申请已提交，退款单号RF0D0EFEC9，预计1-3个工作日原路返回原路返回。",
-      "timestamp": 1786894135.3478603
+      "content": "您好，您的退款申请已提交，退款单号RFED9C8DB8，预计1-3个工作日原路返回原路返回。",
+      "timestamp": 1786894967.7485502
     },
     {
       "role": "agent",
       "agent": "Verifier",
       "content": "开始效果验证",
-      "timestamp": 1786894135.3478603
+      "timestamp": 1786894967.7485502
     },
     {
       "role": "agent",
       "agent": "Verifier",
       "content": "✅ 问题已解决，满意度=0.85",
-      "timestamp": 1786894135.3478603
+      "timestamp": 1786894967.7485502
     },
     {
       "role": "agent",
       "agent": "MemoryScribe",
       "content": "开始记忆沉淀",
-      "timestamp": 1786894135.3478603
+      "timestamp": 1786894967.7485502
     },
     {
       "role": "agent",
       "agent": "MemoryScribe",
       "content": "已生成服务报告，知识库更新建议1条",
-      "timestamp": 1786894135.3478603
+      "timestamp": 1786894967.7485502
+    }
+  ],
+  "task_plan": [
+    {
+      "step": 1,
+      "action": "query_order",
+      "skill": "OrderQuery",
+      "params": {
+        "order_id": "ORD20260816001"
+      },
+      "risk_level": "L0",
+      "desc": "查询订单确认退款资格"
+    },
+    {
+      "step": 2,
+      "action": "risk_assessment",
+      "skill": "RiskEscalation",
+      "params": {
+        "action": "refund",
+        "amount": 299.0
+      },
+      "risk_level": "L2",
+      "desc": "评估退款风险(L2，需审批)"
+    },
+    {
+      "step": 3,
+      "action": "request_approval",
+      "risk_level": "L2",
+      "desc": "请求用户确认退款"
+    },
+    {
+      "step": 4,
+      "action": "process_refund",
+      "skill": "RefundProcess",
+      "params": {
+        "order_id": "ORD20260816001",
+        "reason": "用户申请退款"
+      },
+      "risk_level": "L2",
+      "need_approval": true,
+      "desc": "执行退款(审批通过后)"
+    }
+  ],
+  "execution_records": [
+    {
+      "skill_name": "OrderQuery",
+      "input_params": {
+        "order_id": "ORD20260816001"
+      },
+      "output_result": {
+        "order_id": "ORD20260816001",
+        "status": "refunded",
+        "product": "智能蓝牙耳机 Pro",
+        "amount": 299.0,
+        "create_time": "2026-08-14 10:30:00",
+        "address": "江苏***xxx路1号",
+        "phone": "138****8888",
+        "logistics": {
+          "company": "顺丰速运",
+          "tracking_no": "SF1234567890",
+          "status": "运输中",
+          "last_update": "2026-08-15 18:00:00 已到达南京转运中心"
+        }
+      },
+      "success": true,
+      "risk_level": "L0",
+      "approved": false,
+      "idempotency_key": null,
+      "rollback_point": null,
+      "duration_ms": 100.44,
+      "timestamp": 1786894967.5480456
+    },
+    {
+      "skill_name": "RiskEscalation",
+      "input_params": {
+        "action": "refund",
+        "amount": 299.0
+      },
+      "output_result": {
+        "risk_level": "L2",
+        "need_approval": true
+      },
+      "success": true,
+      "risk_level": "L2",
+      "approved": false,
+      "idempotency_key": null,
+      "rollback_point": null,
+      "duration_ms": 0.0,
+      "timestamp": 1786894967.5480456
+    },
+    {
+      "skill_name": "RefundProcess",
+      "input_params": {
+        "order_id": "ORD20260816001",
+        "reason": "用户申请退款",
+        "idempotency_key": "idem-process_refund-d9494f16",
+        "approved": true,
+        "approval_id": "8f7f1d86",
+        "approver": "demo_admin"
+      },
+      "output_result": {
+        "refund_id": "RFED9C8DB8",
+        "order_id": "ORD20260816001",
+        "amount": 299.0,
+        "reason": "用户申请退款",
+        "status": "processing",
+        "expected_arrival": "1-3个工***返回",
+        "created_at": "2026-08-16 23:42:47",
+        "rollback_point": {
+          "order_id": "ORD20260816001",
+          "previous_status": "shipped"
+        },
+        "idempotency_key": "idem-process_refund-d9494f16"
+      },
+      "success": true,
+      "risk_level": "L2",
+      "approved": false,
+      "idempotency_key": "idem-process_refund-d9494f16",
+      "rollback_point": {
+        "order_id": "ORD20260816001",
+        "previous_status": "shipped"
+      },
+      "duration_ms": 200.5,
+      "timestamp": 1786894967.7485502
+    }
+  ],
+  "idempotency_keys": {
+    "process_refund": "idem-process_refund-d9494f16"
+  },
+  "timeline": [
+    {
+      "time": "23:42:47",
+      "agent": "user",
+      "action": "我要退款，订单ORD20260816001不想要了"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "IntentRouter",
+      "action": "收到用户消息: 我要退款，订单ORD20260816001不想要了..."
+    },
+    {
+      "time": "23:42:47",
+      "agent": "IntentRouter",
+      "action": "意图=refund, 情绪=0.50, 紧急度=normal"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "KnowledgeRetriever",
+      "action": "开始检索知识库，意图=refund"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "KnowledgeRetriever",
+      "action": "检索到4条结果，置信度=0.90"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "TaskPlanner",
+      "action": "开始任务规划，意图=refund"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "TaskPlanner",
+      "action": "规划4步执行，整体风险=L2"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "ToolExecutor",
+      "action": "开始执行任务计划，共4步"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "ToolExecutor",
+      "action": "执行步骤1: 查询订单确认退款资格"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "ToolExecutor",
+      "action": "执行 OrderQuery -> 成功"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "ToolExecutor",
+      "action": "执行步骤2: 评估退款风险(L2，需审批)"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "ToolExecutor",
+      "action": "执行 RiskEscalation -> 成功"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "QualityGuard",
+      "action": "[审批请求] process_refund (L2)"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "demo_admin",
+      "action": "[审批通过] process_refund"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "ToolExecutor",
+      "action": "执行步骤4: 执行退款(审批通过后)"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "ToolExecutor",
+      "action": "执行 RefundProcess -> 成功 (幂等键=idem-process_refund-d9494f16)"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "QualityGuard",
+      "action": "开始质量审核"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "QualityGuard",
+      "action": "✅ 质量审核通过"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "QualityGuard",
+      "action": "您好，您的退款申请已提交，退款单号RFED9C8DB8，预计1-3个工作日原路返回原路返回。"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "Verifier",
+      "action": "开始效果验证"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "Verifier",
+      "action": "✅ 问题已解决，满意度=0.85"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "MemoryScribe",
+      "action": "开始记忆沉淀"
+    },
+    {
+      "time": "23:42:47",
+      "agent": "MemoryScribe",
+      "action": "已生成服务报告，知识库更新建议1条"
     }
   ]
 }

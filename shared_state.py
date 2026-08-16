@@ -205,21 +205,27 @@ class SharedState:
                 return msg
         return None
     
-    def to_dict(self) -> Dict:
-        """导出为字典（用于日志/报告）"""
-        return {
+    def to_dict(self, full: bool = True) -> Dict:
+        """导出为字典（用于日志/报告/续跑）"""
+        data = {
             "session_id": self.session_id,
+            "user_id": self.user_id,
             "trace_id": self.trace_id,
+            "auto_approve": self.auto_approve,
+            "approver": self.approver,
             "intent": self.intent,
             "sentiment": self.sentiment,
             "urgency": self.urgency,
             "risk_level": self.overall_risk_level,
+            "retrieval_confidence": self.retrieval_confidence,
+            "quality_check_passed": self.quality_check_passed,
+            "quality_issues": list(self.quality_issues),
             "issue_resolved": self.issue_resolved,
             "satisfaction": self.satisfaction_score,
-            "retrieval_confidence": self.retrieval_confidence,
             "message_count": len(self.messages),
             "execution_count": len(self.execution_records),
             "summary": self.conversation_summary,
+            "knowledge_update_suggestions": list(self.knowledge_update_suggestions),
             "final_reply": self.final_reply,
             "approval_history": list(self.approval_history),
             "pending_approvals": list(self.pending_approvals),
@@ -232,3 +238,80 @@ class SharedState:
                 for m in self.messages
             ],
         }
+        if full:
+            data.update({
+                "task_plan": list(self.task_plan),
+                "execution_records": [
+                    {
+                        "skill_name": r.skill_name,
+                        "input_params": r.input_params,
+                        "output_result": r.output_result,
+                        "success": r.success,
+                        "risk_level": r.risk_level,
+                        "approved": r.approved,
+                        "idempotency_key": r.idempotency_key,
+                        "rollback_point": r.rollback_point,
+                        "duration_ms": r.duration_ms,
+                        "timestamp": r.timestamp,
+                    }
+                    for r in self.execution_records
+                ],
+                "idempotency_keys": dict(self.idempotency_keys),
+                "timeline": list(self.timeline),
+            })
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "SharedState":
+        """从字典恢复共享状态，用于审批后续跑/回放"""
+        state = cls(
+            session_id=data.get("session_id") or str(uuid.uuid4())[:8],
+            user_id=data.get("user_id", "anonymous"),
+            trace_id=data.get("trace_id", ""),
+            auto_approve=bool(data.get("auto_approve", True)),
+            approver=data.get("approver", "auto_demo"),
+        )
+        state.intent = data.get("intent")
+        state.sentiment = float(data.get("sentiment", 0.5))
+        state.urgency = data.get("urgency", "normal")
+        state.retrieval_confidence = float(data.get("retrieval_confidence", 0.0))
+        state.task_plan = list(data.get("task_plan", []))
+        state.overall_risk_level = data.get("risk_level", "L0")
+        state.quality_check_passed = bool(data.get("quality_check_passed", False))
+        state.quality_issues = list(data.get("quality_issues", []))
+        state.issue_resolved = bool(data.get("issue_resolved", False))
+        state.satisfaction_score = float(data.get("satisfaction", 0.0))
+        state.conversation_summary = data.get("summary", "")
+        state.knowledge_update_suggestions = list(data.get("knowledge_update_suggestions", []))
+        state.final_reply = data.get("final_reply", "")
+        state.pending_approvals = list(data.get("pending_approvals", []))
+        state.approval_history = list(data.get("approval_history", []))
+        state.audit_events = list(data.get("audit_events", []))
+        state.tickets_created = list(data.get("tickets", []))
+        state.rollback_points = list(data.get("rollback_points", []))
+        state.idempotency_keys = dict(data.get("idempotency_keys", {}))
+        state.needs_human = bool(data.get("needs_human", False))
+        state.timeline = list(data.get("timeline", []))
+
+        for msg in data.get("messages", []):
+            state.messages.append(Message(
+                role=msg.get("role", "user"),
+                agent_name=msg.get("agent"),
+                content=msg.get("content", ""),
+                timestamp=float(msg.get("timestamp", time.time())),
+                metadata=msg.get("metadata", {}),
+            ))
+        for rec in data.get("execution_records", []):
+            state.execution_records.append(ExecutionRecord(
+                skill_name=rec.get("skill_name", ""),
+                input_params=rec.get("input_params", {}),
+                output_result=rec.get("output_result"),
+                success=bool(rec.get("success", False)),
+                risk_level=rec.get("risk_level", "L0"),
+                approved=bool(rec.get("approved", False)),
+                idempotency_key=rec.get("idempotency_key"),
+                rollback_point=rec.get("rollback_point"),
+                duration_ms=float(rec.get("duration_ms", 0.0)),
+                timestamp=float(rec.get("timestamp", time.time())),
+            ))
+        return state

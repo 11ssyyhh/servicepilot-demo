@@ -85,6 +85,22 @@ def demo_scenario_5_complaint(manager):
     return manager.run("你们什么垃圾客服！等了三天都没解决问题，我要投诉！")
 
 
+def demo_scenario_6_return(manager):
+    """Demo场景6: 退货咨询 (知识库自动回复)"""
+    print("\n" + "█"*60)
+    print("█ Demo场景6: 退货咨询 (RAG知识库自动闭环)")
+    print("█"*60)
+    return manager.run("我要申请退货，流程是什么？")
+
+
+def demo_scenario_7_unknown(manager):
+    """Demo场景7: 未知问题 (低置信度，自动转人工)"""
+    print("\n" + "█"*60)
+    print("█ Demo场景7: 未知问题 (RAG低置信度 -> 自动转人工)")
+    print("█"*60)
+    return manager.run("今天天气怎么样？")
+
+
 def interactive_mode(manager):
     """交互模式 - 用户手动输入"""
     print("\n💬 进入交互模式，输入 'quit' 退出\n")
@@ -129,7 +145,7 @@ def main():
 
     print("\n" + "="*60)
     print("📋 选择运行模式:")
-    print("  1. 自动演示5个场景 (订单/退款通过/退款拒绝/改地址/投诉)")
+    print("  1. 自动演示7个场景 (订单/退款通过/退款拒绝/改地址/投诉/退货/未知转人工)")
     print("  2. 交互模式 (手动输入)")
     print("  3. 仅运行订单查询场景")
     print("="*60)
@@ -145,6 +161,8 @@ def main():
         demo_scenario_3_refund_rejected(manager)
         demo_scenario_4_address_change(manager)
         demo_scenario_5_complaint(manager)
+        demo_scenario_6_return(manager)
+        demo_scenario_7_unknown(manager)
     elif choice == "2":
         interactive_mode(manager)
     elif choice == "3":

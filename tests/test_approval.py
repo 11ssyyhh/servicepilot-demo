@@ -10,6 +10,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tests.helpers import make_manager  # noqa: E402
+from shared_state import SharedState  # noqa: E402
 
 
 class ApprovalTest(unittest.TestCase):
@@ -50,6 +51,32 @@ class ApprovalTest(unittest.TestCase):
         self.assertTrue(rollback["success"])
         after = mock.query_order("ORD20260816001")["data"]["status"]
         self.assertEqual(after, before)
+
+    def test_resume_after_manual_decision_executes_refund(self):
+        manager = make_manager()
+        state = manager.run("我要退款，订单ORD20260816001不想要了", auto_approve=False)
+        approval = state.pending_approvals[0]
+        self.assertEqual(approval["status"], "pending")
+
+        state.approve(approval["id"], approved=True,
+                      approver="web_operator", reason="人工审批通过")
+        manager.resume(state, start_at="ToolExecutor")
+
+        self.assertTrue(any(r.skill_name == "RefundProcess" and r.success
+                            for r in state.execution_records))
+        self.assertTrue(state.issue_resolved)
+        self.assertIn("approved", approval["status"])
+
+    def test_state_roundtrip_preserves_plan_and_execution(self):
+        manager = make_manager()
+        state = manager.run("我的订单ORD20260816001现在什么状态了？帮我查一下")
+        snapshot = state.to_dict(full=True)
+        restored = SharedState.from_dict(snapshot)
+
+        self.assertEqual(restored.session_id, state.session_id)
+        self.assertEqual(len(restored.task_plan), len(state.task_plan))
+        self.assertEqual(len(restored.execution_records), len(state.execution_records))
+        self.assertEqual(restored.final_reply, state.final_reply)
 
 
 if __name__ == "__main__":

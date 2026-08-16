@@ -1,49 +1,104 @@
 {
-  "trace_id": "64d4eacc-612",
-  "session_id": "d65569b5",
-  "intent": "complaint",
-  "risk_level": "L0",
+  "trace_id": "13cf76ff-9d3",
+  "session_id": "8b2626d5",
+  "intent": "refund",
+  "risk_level": "L2",
   "issue_resolved": true,
   "satisfaction": 0.85,
-  "retrieval_confidence": 0.5,
-  "approvals": [],
+  "retrieval_confidence": 0.9,
+  "approvals": [
+    {
+      "id": "4d4a75e8",
+      "action": "process_refund",
+      "reason": "评审演示：人工审批通过，续跑退款闭环",
+      "risk_level": "L2",
+      "idempotency_key": "idem-process_refund-71bab228",
+      "evidence": [
+        {
+          "step": 4,
+          "desc": "执行退款(审批通过后)",
+          "skill": "RefundProcess",
+          "risk_level": "L2"
+        }
+      ],
+      "status": "approved",
+      "timestamp": 1786894967.8590128,
+      "approver": "web_operator",
+      "approved": true
+    }
+  ],
   "tickets": [
     {
-      "ticket_id": "TK20260816003",
-      "problem": "用户投诉",
+      "ticket_id": "TK20260816001",
+      "problem": "自动处理未解决: refund",
       "priority": "high",
       "status": "open",
-      "created_at": "2026-08-16 23:28:55",
+      "created_at": "2026-08-16 23:42:47",
       "expected_response": "2小时内",
-      "idempotency_key": "idem-TicketCreate-ab7c6da2"
+      "idempotency_key": "idem-ticket-verify-546aa501"
     }
   ],
   "execution_records": [
     {
-      "skill": "TicketCreate",
+      "skill": "OrderQuery",
       "success": true,
       "risk_level": "L0",
-      "idempotency_key": "idem-TicketCreate-ab7c6da2",
+      "idempotency_key": null,
       "rollback_point": null,
-      "duration_ms": 100.22
+      "duration_ms": 100.94
+    },
+    {
+      "skill": "RiskEscalation",
+      "success": true,
+      "risk_level": "L2",
+      "idempotency_key": null,
+      "rollback_point": null,
+      "duration_ms": 0.0
+    },
+    {
+      "skill": "OrderQuery",
+      "success": true,
+      "risk_level": "L0",
+      "idempotency_key": null,
+      "rollback_point": null,
+      "duration_ms": 100.85
+    },
+    {
+      "skill": "RiskEscalation",
+      "success": true,
+      "risk_level": "L2",
+      "idempotency_key": null,
+      "rollback_point": null,
+      "duration_ms": 0.0
+    },
+    {
+      "skill": "RefundProcess",
+      "success": true,
+      "risk_level": "L2",
+      "idempotency_key": "idem-process_refund-71bab228",
+      "rollback_point": {
+        "order_id": "ORD20260816002",
+        "previous_status": "delivered"
+      },
+      "duration_ms": 200.67
     }
   ],
   "metrics": {
     "conversations": 1.0,
-    "agents_called": 7.0,
+    "agents_called": 4.0,
     "skill_calls": 0,
-    "mcp_calls": 1.0,
-    "llm_calls": 3.0,
+    "mcp_calls": 3.0,
+    "llm_calls": 2.0,
     "approval_requests": 0,
     "approvals_granted": 0,
     "approvals_rejected": 0,
     "rollbacks": 0,
-    "tickets_created": 1.0,
-    "tool_successes": 1.0,
+    "tickets_created": 0,
+    "tool_successes": 3.0,
     "tool_failures": 0,
-    "rag_retrievals": 1.0,
-    "total_tokens": 201,
+    "rag_retrievals": 0,
+    "total_tokens": 152,
     "total_cost_usd": 0.0,
-    "e2e_latency_ms": 101.22
+    "e2e_latency_ms": 301.52
   }
 }
